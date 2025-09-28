@@ -5,7 +5,7 @@ async function main() {
 
   const [deployer] = await ethers.getSigners();
   console.log("Using account:", deployer.address);
-  console.log("Account balance:", ethers.formatEther(await deployer.provider.getBalance(deployer.address)), "ETH");
+  console.log("Account balance:", ethers.formatEther(await deployer.provider.getBalance(deployer.address)), "FLOW");
 
   // Check VRF contract
   const vrfContractAddress = process.env.NEXT_PUBLIC_VRF_CONTRACT_ADDRESS || "0xacA996A4d49e7Ed42dA68a20600F249BE6d024A4";

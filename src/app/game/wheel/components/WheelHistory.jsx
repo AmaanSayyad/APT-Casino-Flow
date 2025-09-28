@@ -15,15 +15,15 @@ const WheelHistory = ({ gameHistory = [] }) => {
    // Open Arbiscan link for transaction hash
    const openArbiscan = (hash) => {
     if (hash && hash !== 'unknown') {
-      const network = process.env.NEXT_PUBLIC_NETWORK || 'arbitrum-sepolia';
+      const network = process.env.NEXT_PUBLIC_NETWORK || 'flow-testnet';
       let explorerUrl;
       
-      if (network === 'arbitrum-sepolia') {
-        explorerUrl = `https://sepolia.arbiscan.io/tx/${hash}`;
-      } else if (network === 'arbitrum-one') {
+      if (network === 'flow-testnet') {
+        explorerUrl = `https://testnet.arbiscan.io/tx/${hash}`;
+      } else if (network === 'flow-one') {
         explorerUrl = `https://arbiscan.io/tx/${hash}`;
       } else {
-        explorerUrl = `https://sepolia.etherscan.io/tx/${hash}`;
+        explorerUrl = `https://testnet.etherscan.io/tx/${hash}`;
       }
       
       window.open(explorerUrl, '_blank');
@@ -166,7 +166,7 @@ const WheelHistory = ({ gameHistory = [] }) => {
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap'
               }}>
-                {totalVolume.toFixed(5)} ETH
+                {totalVolume.toFixed(5)} FLOW
               </Typography>
               <Box 
                 sx={{ 
@@ -202,7 +202,7 @@ const WheelHistory = ({ gameHistory = [] }) => {
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap'
               }}>
-                {biggestWin.toFixed(5)} ETH
+                {biggestWin.toFixed(5)} FLOW
               </Typography>
               <FaTrophy color="#FFA500" />
             </Box>
@@ -522,7 +522,7 @@ const WheelHistory = ({ gameHistory = [] }) => {
                           whiteSpace: 'nowrap'
                         }}
                       >
-                            {item.betAmount} ETH
+                            {item.betAmount} FLOW
                       </Typography>
                       <Image src="/coin.png" width={16} height={16} alt="coin" />
                     </Box>
@@ -553,7 +553,7 @@ const WheelHistory = ({ gameHistory = [] }) => {
                           whiteSpace: 'nowrap'
                         }}
                       >
-                            {item.payout} ETH
+                            {item.payout} FLOW
                       </Typography>
                       <Image src="/coin.png" width={16} height={16} alt="coin" />
                     </Box>
@@ -597,7 +597,7 @@ const WheelHistory = ({ gameHistory = [] }) => {
                           <Button
                             onClick={() => {
                               if (item.entropyProof.transactionHash) {
-                                window.open(`https://entropy-explorer.pyth.network/?chain=arbitrum-sepolia&search=${item.entropyProof.transactionHash}`, '_blank');
+                                window.open(`https://entropy-explorer.pyth.network/?chain=flow-testnet&search=${item.entropyProof.transactionHash}`, '_blank');
                               }
                             }}
                             size="small"

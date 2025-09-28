@@ -5,7 +5,7 @@ async function main() {
 
   const [deployer] = await ethers.getSigners();
   console.log("Using account:", deployer.address);
-  console.log("Account balance:", ethers.formatEther(await deployer.provider.getBalance(deployer.address)), "ETH");
+  console.log("Account balance:", ethers.formatEther(await deployer.provider.getBalance(deployer.address)), "FLOW");
 
   const subscriptionId = "453";
   const vrfCoordinatorAddress = "0x50d47e4142598E3411aA864e08a44284e471AC6f";
@@ -23,10 +23,10 @@ async function main() {
     
     // Check current balance
     const subscription = await vrfCoordinator.getSubscription(subscriptionId);
-    console.log("💰 Current Balance:", ethers.formatEther(subscription.balance), "ETH");
+    console.log("💰 Current Balance:", ethers.formatEther(subscription.balance), "FLOW");
     
-    // Fund subscription with 0.01 ARB ETH (as wei)
-    console.log("\n💰 Funding subscription with 0.01 ARB ETH...");
+    // Fund subscription with 0.01 ARB FLOW (as wei)
+    console.log("\n💰 Funding subscription with 0.01 ARB FLOW...");
     const fundAmount = ethers.parseEther("0.01");
     
     const fundTx = await vrfCoordinator.fundSubscription(subscriptionId, fundAmount, {
@@ -34,23 +34,23 @@ async function main() {
     });
     console.log("Transaction hash:", fundTx.hash);
     await fundTx.wait();
-    console.log("✅ Subscription funded with 0.01 ARB ETH!");
+    console.log("✅ Subscription funded with 0.01 ARB FLOW!");
     
     // Check updated balance
     const updatedSubscription = await vrfCoordinator.getSubscription(subscriptionId);
-    console.log("💰 Updated Balance:", ethers.formatEther(updatedSubscription.balance), "ETH");
+    console.log("💰 Updated Balance:", ethers.formatEther(updatedSubscription.balance), "FLOW");
     
     console.log("\n🎉 VRF Subscription Funding Complete!");
     console.log("=====================================");
     console.log("Subscription ID:", subscriptionId);
-    console.log("Balance:", ethers.formatEther(updatedSubscription.balance), "ARB ETH");
+    console.log("Balance:", ethers.formatEther(updatedSubscription.balance), "ARB FLOW");
     console.log("=====================================");
     
   } catch (error) {
     console.error("❌ Error funding subscription:", error.message);
     
-    // Try alternative method - direct ETH transfer
-    console.log("\n🔄 Trying alternative method - direct ETH transfer...");
+    // Try alternative method - direct FLOW transfer
+    console.log("\n🔄 Trying alternative method - direct FLOW transfer...");
     try {
       const vrfCoordinatorABI = [
         "function getSubscription(uint64 subId) external view returns (uint96 balance, uint64 reqCount, address owner, address[] memory consumers)"
@@ -58,7 +58,7 @@ async function main() {
       
       const vrfCoordinator = new ethers.Contract(vrfCoordinatorAddress, vrfCoordinatorABI, deployer);
       
-      // Send ETH directly to the coordinator
+      // Send FLOW directly to the coordinator
       const fundAmount = ethers.parseEther("0.01");
       const tx = await deployer.sendTransaction({
         to: vrfCoordinatorAddress,
@@ -68,7 +68,7 @@ async function main() {
       
       console.log("Direct transfer tx:", tx.hash);
       await tx.wait();
-      console.log("✅ Direct ETH transfer sent!");
+      console.log("✅ Direct FLOW transfer sent!");
       
     } catch (error2) {
       console.error("❌ Alternative method also failed:", error2.message);

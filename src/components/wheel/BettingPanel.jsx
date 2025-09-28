@@ -71,7 +71,7 @@ const BettingPanel = ({
           <span className="text-sm text-gray-300">Balance:</span>
           {isConnected ? (
             <span className="text-sm text-green-300 font-medium">
-              {balance.toFixed(5)} ETH
+              {balance.toFixed(5)} FLOW
             </span>
           ) : (
             <span className="text-sm text-red-300 font-medium">
@@ -99,8 +99,8 @@ const BettingPanel = ({
             <button
               onClick={() => {
                 // Trigger wallet connection
-                if (window.ethereum) {
-                  window.ethereum.request({ method: 'eth_requestAccounts' });
+                if (window.flow) {
+                  window.flow.request({ method: 'eth_requestAccounts' });
                 }
               }}
               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
@@ -145,7 +145,7 @@ const BettingPanel = ({
       <div className="mb-4">
         <div className="flex justify-between p-1 mb-1">
           <label className="text-sm text-white">Bet Amount</label>
-          <div className="text-sm">{betAmount.toFixed(5)} ETH</div>
+          <div className="text-sm">{betAmount.toFixed(5)} FLOW</div>
         </div>
         <div className="flex w-full gradient-border">
         <div className="flex items-center w-[60%]">

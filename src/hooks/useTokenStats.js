@@ -26,28 +26,28 @@ const useTokenStats = () => {
         
         // Fetch pricing data from Coingecko
         // Note: Replace with your actual token ID once it's listed
-        const apiUrl = 'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true';
+        const apiUrl = 'https://api.coingecko.com/api/v3/simple/price?ids=flow&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true';
         
         const response = await fetch(apiUrl);
         if (!response.ok) throw new Error('Failed to fetch price data');
         
         const data = await response.json();
         
-        // Using Ethereum as a stand-in for demo purposes
+        // Using Flow as a stand-in for demo purposes
         // In production, replace with your actual token data
-        const priceData = data.ethereum;
+        const priceData = data.flow;
         
         // Calculate APY based on staking rewards
         // This would typically come from your smart contract
         const calculatedAPY = 5.8 + (Math.random() * 1.2); // Simulating a fluctuating APY
         
-        // Total ETH pool would come from your contract or API
+        // Total FLOW pool would come from your contract or API
         const totalPoolSize = 203746 + (Math.random() * 1000 - 500); // Simulating fluctuation
         
         // Update the stats
         setStats({
           totalETHPool: totalPoolSize.toFixed(0),
-          ethPrice: priceData.usd / 100, // Using a fraction of ETH price for demo
+          ethPrice: priceData.usd / 100, // Using a fraction of FLOW price for demo
           ethAPY: calculatedAPY.toFixed(2),
           marketCap: (totalPoolSize * (priceData.usd / 100)).toFixed(2),
           volume24h: (priceData.usd_24h_vol / 1000).toFixed(2),

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Box, Typography, Paper, Tabs, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, CircularProgress, Fade } from '@mui/material';
 import { FaHistory, FaChartLine, FaFire, FaExclamationCircle, FaCoins, FaInfoCircle, FaTrophy, FaDice, FaExternalLinkAlt } from 'react-icons/fa';
 
-// Utility function to format ETH amounts with proper decimal precision
+// Utility function to format FLOW amounts with proper decimal precision
 const formatETHAmount = (amount) => {
   if (typeof amount !== 'number') {
     amount = parseFloat(amount) || 0;
@@ -253,15 +253,15 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
   // Open Arbiscan link for transaction hash
   const openArbiscan = (hash) => {
     if (hash && hash !== 'unknown') {
-      const network = process.env.NEXT_PUBLIC_NETWORK || 'arbitrum-sepolia';
+      const network = process.env.NEXT_PUBLIC_NETWORK || 'flow-testnet';
       let explorerUrl;
       
-      if (network === 'arbitrum-sepolia') {
-        explorerUrl = `https://sepolia.arbiscan.io/tx/${hash}`;
-      } else if (network === 'arbitrum-one') {
+      if (network === 'flow-testnet') {
+        explorerUrl = `https://testnet.arbiscan.io/tx/${hash}`;
+      } else if (network === 'flow-one') {
         explorerUrl = `https://arbiscan.io/tx/${hash}`;
       } else {
-        explorerUrl = `https://sepolia.etherscan.io/tx/${hash}`;
+        explorerUrl = `https://testnet.etherscan.io/tx/${hash}`;
       }
       
       window.open(explorerUrl, '_blank');
@@ -271,7 +271,7 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
   // Open Entropy Explorer link
   const openEntropyExplorer = (txHash) => {
     if (txHash) {
-      const entropyExplorerUrl = `https://entropy-explorer.pyth.network/?chain=arbitrum-sepolia&search=${txHash}`;
+      const entropyExplorerUrl = `https://entropy-explorer.pyth.network/?chain=flow-testnet&search=${txHash}`;
       window.open(entropyExplorerUrl, '_blank');
     }
   };
@@ -486,7 +486,7 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
                             )}
                           </Box>
                         </TableCell>
-                        <TableCell align="center">{formatETHAmount(bet.amount || bet.totalBetAmount || 0)} ETH</TableCell>
+                        <TableCell align="center">{formatETHAmount(bet.amount || bet.totalBetAmount || 0)} FLOW</TableCell>
                         <TableCell align="center">
                           <Box 
                             sx={{ 
@@ -522,7 +522,7 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
                             {bet.win ? (
                               <>
                                 <FaCoins size={12} color="#14D854" />
-                                +{formatETHAmount(bet.payout || bet.netResult || 0)} ETH
+                                +{formatETHAmount(bet.payout || bet.netResult || 0)} FLOW
                               </>
                             ) : '-'}
                           </Typography>
@@ -714,7 +714,7 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
                       </Box>
                       <Typography variant="body2" color="rgba(255,255,255,0.7)">Total Wagered</Typography>
                     </Box>
-                    <Typography variant="h4" fontWeight="bold" color="white" sx={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>{formatETHAmount(stats.totalWagered)} ETH</Typography>
+                    <Typography variant="h4" fontWeight="bold" color="white" sx={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>{formatETHAmount(stats.totalWagered)} FLOW</Typography>
                   </Box>
                   
                   <Box 
@@ -756,7 +756,7 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
                       color={stats.netProfit >= 0 ? '#14D854' : '#d82633'}
                       sx={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}
                     >
-                      {stats.netProfit >= 0 ? '+' : ''}{formatETHAmount(stats.netProfit)} ETH
+                      {stats.netProfit >= 0 ? '+' : ''}{formatETHAmount(stats.netProfit)} FLOW
                     </Typography>
                   </Box>
                 </Box>
@@ -876,7 +876,7 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
                             zIndex: 2 
                           }}
                         >
-                          {stats.biggestWin.payout} ETH
+                          {stats.biggestWin.payout} FLOW
                         </Typography>
                         <Box 
                           sx={{ 

@@ -5,9 +5,9 @@ async function main() {
 
   const [deployer] = await ethers.getSigners();
   console.log("Using account:", deployer.address);
-  console.log("Account balance:", ethers.formatEther(await deployer.provider.getBalance(deployer.address)), "ETH");
+  console.log("Account balance:", ethers.formatEther(await deployer.provider.getBalance(deployer.address)), "FLOW");
 
-  const linkTokenAddress = "0xb1D4538B4571d411F07960EF2838Ce337FE1E80E"; // Arbitrum Sepolia LINK Token
+  const linkTokenAddress = "0xb1D4538B4571d411F07960EF2838Ce337FE1E80E"; // Flow Testnet LINK Token
   const vrfCoordinatorAddress = "0x50d47e4142598E3411aA864e08a44284e471AC6f";
   const subscriptionId = "453";
 
@@ -27,8 +27,8 @@ async function main() {
     
     if (linkBalance === 0n) {
       console.log("\n❌ No LINK tokens found!");
-      console.log("🔗 Please get LINK tokens from Arbitrum Sepolia faucet:");
-      console.log("   https://faucets.chain.link/arbitrum-sepolia");
+      console.log("🔗 Please get LINK tokens from Flow Testnet faucet:");
+      console.log("   https://faucets.chain.link/flow-testnet");
       console.log("\n📝 Steps:");
       console.log("1. Go to the faucet link above");
       console.log("2. Connect your wallet: 0xb424d2369F07b925D1218B08e56700AF5928287b");

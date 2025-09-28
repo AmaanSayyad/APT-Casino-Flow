@@ -1,16 +1,16 @@
 "use client";
 import { useState, useEffect } from 'react';
 
-// Mock data for Ethereum testnet
+// Mock data for Flow testnet
 const MOCK_BALANCES = {
   native: {
-    symbol: 'ETH',
+    symbol: 'FLOW',
     formatted: '25.1234',
     value: '25123400000000000000000',
     decimals: 18
   },
-  eth: {
-    symbol: 'ETH',
+  flow: {
+    symbol: 'FLOW',
     formatted: '500.00',
     value: '500000000000000000000000',
     decimals: 18
@@ -21,7 +21,7 @@ const MOCK_BALANCES = {
 export const useUserBalances = () => {
   const [balances, setBalances] = useState({
     native: null,
-    eth: null,
+    flow: null,
     other: [],
     loading: true,
     error: null

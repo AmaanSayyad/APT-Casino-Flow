@@ -1,68 +1,68 @@
 /**
  * Clearnode Testnet Token Configuration
  * Based on Yellow Network Clearnode Testnet and ERC-7824 standards
- * Supports Sepolia and other popular testnets
+ * Supports Testnet and other popular testnets
  */
 
 export const CLEARNODE_TESTNET_TOKENS = {
-  // Sepolia ETH (Native)
-  ETH: {
-    symbol: 'ETH',
-    name: 'Ethereum (Sepolia)',
+  // Testnet FLOW (Native)
+  FLOW: {
+    symbol: 'FLOW',
+    name: 'Flow (Testnet)',
     decimals: 18,
-    address: '0x0000000000000000000000000000000000000000', // Native ETH
+    address: '0x0000000000000000000000000000000000000000', // Native FLOW
     isNative: true,
-    testnet: 'sepolia',
+    testnet: 'testnet',
     icon: '⟠',
-    faucet: 'https://sepoliafaucet.com'
+    faucet: 'https://testnetfaucet.com'
   },
 
-  // Sepolia USDC (Test)
+  // Testnet USDC (Test)
   USDC: {
     symbol: 'USDC',
-    name: 'USD Coin (Sepolia)',
+    name: 'USD Coin (Testnet)',
     decimals: 6,
-    address: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238', // Sepolia USDC
+    address: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238', // Testnet USDC
     isStablecoin: true,
-    testnet: 'sepolia',
+    testnet: 'testnet',
     icon: '💰',
     faucet: 'https://faucet.circle.com'
   },
 
-  // Sepolia USDT (Test)
+  // Testnet USDT (Test)
   USDT: {
     symbol: 'USDT',
-    name: 'Tether USD (Sepolia)',
+    name: 'Tether USD (Testnet)',
     decimals: 6,
-    address: '0x7169D38820dfd117C3FA1f22a697dBA58d90BA06', // Sepolia USDT
+    address: '0x7169D38820dfd117C3FA1f22a697dBA58d90BA06', // Testnet USDT
     isStablecoin: true,
-    testnet: 'sepolia',
+    testnet: 'testnet',
     icon: '💵',
     faucet: 'https://faucet.tether.to'
   },
 
-  // Arbitrum Sepolia ETH
+  // Flow Testnet FLOW
   ARB_ETH: {
-    symbol: 'ETH',
-    name: 'Ethereum (Arbitrum Sepolia)',
+    symbol: 'FLOW',
+    name: 'Flow (Flow Testnet)',
     decimals: 18,
-    address: '0x0000000000000000000000000000000000000000', // Native ETH
+    address: '0x0000000000000000000000000000000000000000', // Native FLOW
     isNative: true,
-    testnet: 'arbitrum-sepolia',
+    testnet: 'flow-testnet',
     icon: '🔵',
-    faucet: 'https://faucet.arbitrum.io'
+    faucet: 'https://faucet.flow.io'
   },
 
-  // Arbitrum Sepolia USDC
+  // Flow Testnet USDC
   ARB_USDC: {
     symbol: 'USDC',
-    name: 'USD Coin (Arbitrum Sepolia)',
+    name: 'USD Coin (Flow Testnet)',
     decimals: 6,
-    address: '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d', // Arbitrum Sepolia USDC
+    address: '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d', // Flow Testnet USDC
     isStablecoin: true,
-    testnet: 'arbitrum-sepolia',
+    testnet: 'flow-testnet',
     icon: '🔵💰',
-    faucet: 'https://faucet.arbitrum.io'
+    faucet: 'https://faucet.flow.io'
   },
 
   // Polygon Mumbai MATIC
@@ -77,37 +77,37 @@ export const CLEARNODE_TESTNET_TOKENS = {
     faucet: 'https://faucet.polygon.technology'
   },
 
-  // Optimism Sepolia ETH
+  // Optimism Testnet FLOW
   OP_ETH: {
-    symbol: 'ETH',
-    name: 'Ethereum (Optimism Sepolia)',
+    symbol: 'FLOW',
+    name: 'Flow (Optimism Testnet)',
     decimals: 18,
-    address: '0x0000000000000000000000000000000000000000', // Native ETH
+    address: '0x0000000000000000000000000000000000000000', // Native FLOW
     isNative: true,
-    testnet: 'optimism-sepolia',
+    testnet: 'optimism-testnet',
     icon: '🔴',
     faucet: 'https://faucet.optimism.io'
   }
 };
 
-// Default token for casino operations (Arbitrum Sepolia ETH)
+// Default token for casino operations (Flow Testnet FLOW)
 export const DEFAULT_CASINO_TOKEN = CLEARNODE_TESTNET_TOKENS.ARB_ETH;
 
 // Supported tokens for betting by testnet
 export const SUPPORTED_BETTING_TOKENS = {
-  sepolia: [
-    CLEARNODE_TESTNET_TOKENS.ETH,
+  testnet: [
+    CLEARNODE_TESTNET_TOKENS.FLOW,
     CLEARNODE_TESTNET_TOKENS.USDC,
     CLEARNODE_TESTNET_TOKENS.USDT
   ],
-  'arbitrum-sepolia': [
+  'flow-testnet': [
     CLEARNODE_TESTNET_TOKENS.ARB_ETH,
     CLEARNODE_TESTNET_TOKENS.ARB_USDC
   ],
   'polygon-mumbai': [
     CLEARNODE_TESTNET_TOKENS.MATIC
   ],
-  'optimism-sepolia': [
+  'optimism-testnet': [
     CLEARNODE_TESTNET_TOKENS.OP_ETH
   ]
 };
@@ -124,7 +124,7 @@ export const TOKEN_ADDRESSES = Object.fromEntries(
 );
 
 // Helper functions
-export const getTokenBySymbol = (symbol, testnet = 'sepolia') => {
+export const getTokenBySymbol = (symbol, testnet = 'testnet') => {
   return Object.values(CLEARNODE_TESTNET_TOKENS).find(
     token => token.symbol.toLowerCase() === symbol.toLowerCase() && 
              token.testnet === testnet

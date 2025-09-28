@@ -6,7 +6,7 @@ async function main() {
   // Get signer
   const [deployer] = await ethers.getSigners();
   console.log("Using account:", deployer.address);
-  console.log("Account balance:", ethers.formatEther(await deployer.provider.getBalance(deployer.address)), "ETH");
+  console.log("Account balance:", ethers.formatEther(await deployer.provider.getBalance(deployer.address)), "FLOW");
 
   // Pyth Entropy contract address
   const pythEntropyAddress = "0x549ebba8036ab746611b4ffa1423eb0a4df61440";
@@ -43,7 +43,7 @@ async function main() {
     // Test getFee
     try {
       const fee = await pythContract.getFee(providerAddress);
-      console.log("✅ getFee():", ethers.formatEther(fee), "ETH");
+      console.log("✅ getFee():", ethers.formatEther(fee), "FLOW");
     } catch (error) {
       console.log("❌ getFee() failed:", error.message);
     }
@@ -57,7 +57,7 @@ async function main() {
     let fee;
     try {
       fee = await pythContract.getFee(providerAddress);
-      console.log("Fee:", ethers.formatEther(fee), "ETH");
+      console.log("Fee:", ethers.formatEther(fee), "FLOW");
     } catch (error) {
       console.log("Using default fee");
       fee = ethers.parseEther("0.001");

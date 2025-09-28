@@ -5,7 +5,7 @@ async function main() {
 
   const [deployer] = await ethers.getSigners();
   console.log("Using account:", deployer.address);
-  console.log("Account balance:", ethers.formatEther(await deployer.provider.getBalance(deployer.address)), "ETH");
+  console.log("Account balance:", ethers.formatEther(await deployer.provider.getBalance(deployer.address)), "FLOW");
 
   const vrfContractAddress = "0xe2B5066f1521A4b882053F6D758d4288c5928586";
   const vrfContract = await ethers.getContractAt("CasinoVRFConsumer", vrfContractAddress);
@@ -22,14 +22,14 @@ async function main() {
     
     // Check if treasury has enough funds
     const treasuryBalance = await deployer.provider.getBalance(contractInfo.treasuryAddress);
-    console.log("\n💰 Treasury Balance:", ethers.formatEther(treasuryBalance), "ETH");
+    console.log("\n💰 Treasury Balance:", ethers.formatEther(treasuryBalance), "FLOW");
     
     if (treasuryBalance < ethers.parseEther("0.2")) {
-      console.log("\n❌ Treasury needs more ARB ETH!");
+      console.log("\n❌ Treasury needs more ARB FLOW!");
       console.log("🔗 Please fund the treasury wallet:");
       console.log("   Address: 0xb424d2369F07b925D1218B08e56700AF5928287b");
-      console.log("   Faucet: https://faucet.triangleplatform.com/arbitrum/sepolia");
-      console.log("   Amount needed: At least 0.2 ARB ETH");
+      console.log("   Faucet: https://faucet.triangleplatform.com/flow/testnet");
+      console.log("   Amount needed: At least 0.2 ARB FLOW");
     } else {
       console.log("✅ Treasury has sufficient funds!");
     }

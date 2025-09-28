@@ -31,18 +31,19 @@ import StrategyGuide from './components/StrategyGuide';
 import RoulettePayout from './components/RoulettePayout';
 import WinProbabilities from './components/WinProbabilities';
 import RouletteHistory from './components/RouletteHistory';
-import { useAccount } from 'wagmi';
+// Removed wagmi import - using Flow wallet instead
 import { useSelector, useDispatch } from 'react-redux';
 import { setBalance, setLoading, loadBalanceFromStorage } from '@/store/balanceSlice';
 import pythEntropyService from '@/services/PythEntropyService';
+import { useFlowWallet } from '@/hooks/useFlowWallet';
 
-// Ethereum client functions will be added here when needed
+// Flow client functions will be added here when needed
 
-// Casino module address for Ethereum
+// Casino module address for Flow
 const CASINO_MODULE_ADDRESS = "0x1234567890123456789012345678901234567890123456789012345678901234";
 
 const parseEthAmount = (amount) => {
-  // Parse ETH amount
+  // Parse FLOW amount
   return parseFloat(amount);
 };
 
@@ -59,7 +60,7 @@ const CasinoGames = {
 };
 
 
-// Ethereum wallet integration will be added here
+// Flow wallet integration will be added here
 
 const TooltipWide = styled(({ className, ...props }) => (
   <Tooltip {...props} classes={{ popper: className }} />
@@ -1104,8 +1105,8 @@ export default function GameRoulette() {
                       <FaCoins className="text-yellow-400" />
                     </div>
                     <div className="text-xs text-white/50 font-sans text-center">Volume</div>
-                    <div className="text-white font-display text-sm md:text-base truncate w-full text-center" title={`${gameStatistics.totalVolume} ETH`}>
-                      {gameStatistics.totalVolume} ETH
+                    <div className="text-white font-display text-sm md:text-base truncate w-full text-center" title={`${gameStatistics.totalVolume} FLOW`}>
+                      {gameStatistics.totalVolume} FLOW
                     </div>
                   </div>
 
@@ -1114,8 +1115,8 @@ export default function GameRoulette() {
                       <FaTrophy className="text-yellow-500" />
                     </div>
                     <div className="text-xs text-white/50 font-sans text-center">Max Win</div>
-                    <div className="text-white font-display text-sm md:text-base truncate w-full text-center" title={`${gameStatistics.maxWin} ETH`}>
-                      {gameStatistics.maxWin} ETH
+                    <div className="text-white font-display text-sm md:text-base truncate w-full text-center" title={`${gameStatistics.maxWin} FLOW`}>
+                      {gameStatistics.maxWin} FLOW
                     </div>
                   </div>
                 </motion.div>
@@ -1190,16 +1191,20 @@ export default function GameRoulette() {
   const [bettingHistory, setBettingHistory] = useState([]);
   const [error, setError] = useState(null);
 
-  // Ethereum wallet
-  const { address, isConnected } = useAccount();
+  // Flow wallet
+  const { address, isConnected } = useFlowWallet();
   const account = { address };
   const connected = isConnected;
   const isWalletReady = isConnected && address;
   const [realBalance, setRealBalance] = useState('0');
-  const { balance } = useToken(address); // Keep for compatibility
+  const { balance: mockBalance } = useToken(address); // Mock balance for compatibility
+  
+  // Use Flow balance from Redux store
+  const { userFlowBalance } = useSelector((state) => state.balance);
+  const balance = userFlowBalance || '0';
   const HOUSE_ADDR = CASINO_MODULE_ADDRESS;
 
-  // Function to fetch real ETH balance will be defined after useSelector
+  // Function to fetch real FLOW balance will be defined after useSelector
 
   // Sound refs
   const spinSoundRef = useRef(null);
@@ -1366,12 +1371,12 @@ export default function GameRoulette() {
   const dispatch = useDispatch();
   const { userBalance, isLoading: isLoadingBalance } = useSelector((state) => state.balance);
 
-  // Function to fetch real ETH balance
+  // Function to fetch real FLOW balance
   const fetchRealBalance = useCallback(async () => {
     if (!account?.address) return;
 
     try {
-      // For Ethereum, we can use the userBalance from Redux store
+      // For Flow, we can use the userBalance from Redux store
       // or fetch from the blockchain if needed
       const currentBalance = parseFloat(userBalance || '0');
       setRealBalance(currentBalance.toFixed(8));
@@ -1597,7 +1602,7 @@ export default function GameRoulette() {
   const lockBet = async () => {
     // Check if wallet is connected
     if (!isConnected) {
-      alert("Please connect your Ethereum wallet first to play Roulette!");
+      alert("Please connect your Flow wallet first to play Roulette!");
       return;
     }
 
@@ -1607,11 +1612,11 @@ export default function GameRoulette() {
     }
 
     // Check Redux balance instead of wallet
-    const currentBalance = parseFloat(userBalance || '0'); // Balance is already in ETH
+    const currentBalance = parseFloat(userBalance || '0'); // Balance is already in FLOW
     const totalBetAmount = total;
 
     if (currentBalance < totalBetAmount) {
-      alert(`Insufficient balance. You have ${currentBalance.toFixed(5)} ETH but need ${totalBetAmount.toFixed(5)} ETH`);
+      alert(`Insufficient balance. You have ${currentBalance.toFixed(5)} FLOW but need ${totalBetAmount.toFixed(5)} FLOW`);
       return;
     }
 
@@ -1633,7 +1638,7 @@ export default function GameRoulette() {
       
       // Check if user has enough balance
       if (originalBalance < totalBetAmount) {
-        alert(`Insufficient balance. You have ${originalBalance.toFixed(5)} ETH but need ${totalBetAmount.toFixed(5)} ETH`);
+        alert(`Insufficient balance. You have ${originalBalance.toFixed(5)} FLOW but need ${totalBetAmount.toFixed(5)} FLOW`);
         setSubmitDisabled(false);
         setWheelSpinning(false);
         return;
@@ -2089,16 +2094,16 @@ export default function GameRoulette() {
         // Show result notification
         if (netResult > 0) {
           const winMessage = winningBets.length === 1
-                    ? `🎉 WINNER! ${winningBets[0].name} - You won ${(netResult - totalBetAmount).toFixed(5)} ETH!`
-                    : `🎉 MULTIPLE WINNERS! ${winningBets.length} bets won - Total: ${(netResult - totalBetAmount).toFixed(5)} ETH!`;
+                    ? `🎉 WINNER! ${winningBets[0].name} - You won ${(netResult - totalBetAmount).toFixed(5)} FLOW!`
+                    : `🎉 MULTIPLE WINNERS! ${winningBets.length} bets won - Total: ${(netResult - totalBetAmount).toFixed(5)} FLOW!`;
 
           setNotificationMessage(winMessage);
           setNotificationSeverity("success");
           setSnackbarMessage(winMessage);
         } else {
-          setNotificationMessage(`💸 Number ${winningNumber} - You lost ${totalBetAmount.toFixed(5)} ETH!`);
+          setNotificationMessage(`💸 Number ${winningNumber} - You lost ${totalBetAmount.toFixed(5)} FLOW!`);
           setNotificationSeverity("error");
-          setSnackbarMessage(`💸 Number ${winningNumber} - You lost ${totalBetAmount.toFixed(5)} ETH!`);
+          setSnackbarMessage(`💸 Number ${winningNumber} - You lost ${totalBetAmount.toFixed(5)} FLOW!`);
         }
         setSnackbarOpen(true);
 
@@ -2170,7 +2175,7 @@ export default function GameRoulette() {
 
       // Simulate the contract interaction
       const withdrawSimulation =
-        await ViemClient.publicPharosSepoliaClient.simulateContract({
+        await ViemClient.publicPharosTestnetClient.simulateContract({
           address: rouletteContractAddress,
           abi: rouletteABI,
           functionName: "withdrawTokens",
@@ -2236,15 +2241,15 @@ export default function GameRoulette() {
         return;
       }
 
-      // Fall back to window.ethereum check with retry
+      // Fall back to window.flow check with retry
       const checkWithRetry = async (attempts = 3) => {
-        if (window.ethereum && typeof window.ethereum.request === 'function') {
-          console.log("Ethereum provider found, requesting chain ID...");
+        if (window.flow && typeof window.flow.request === 'function') {
+          console.log("Flow provider found, requesting chain ID...");
           try {
-            const chainId = await window.ethereum.request({ method: "eth_chainId" });
+            const chainId = await window.flow.request({ method: "eth_chainId" });
             console.log("Current chain ID:", chainId);
 
-            // Support both Mantle Sepolia (0x138b) and Pharos Devnet (0xc352)
+            // Support both Mantle Testnet (0x138b) and Pharos Devnet (0xc352)
             const isCorrectNetwork = chainId === "0x138b" || chainId === "0xc352";
             console.log("Is correct network:", isCorrectNetwork);
             setCorrectNetwork(isCorrectNetwork);
@@ -2258,7 +2263,7 @@ export default function GameRoulette() {
             }
           }
         } else {
-          console.log("Ethereum provider not available or not fully initialized");
+          console.log("Flow provider not available or not fully initialized");
           if (attempts > 1) {
             console.log(`Retrying... (${attempts - 1} attempts left)`);
             setTimeout(() => checkWithRetry(attempts - 1), 500);
@@ -2286,20 +2291,20 @@ export default function GameRoulette() {
 
       // Setup event listener if provider exists
       const setupListeners = () => {
-        if (window.ethereum && typeof window.ethereum.on === 'function') {
-          window.ethereum.on("chainChanged", () => {
+        if (window.flow && typeof window.flow.on === 'function') {
+          window.flow.on("chainChanged", () => {
             console.log("Chain changed, rechecking network");
             checkNetwork();
           });
-          window.ethereum.on("accountsChanged", () => {
+          window.flow.on("accountsChanged", () => {
             console.log("Accounts changed, rechecking network");
             checkNetwork();
           });
 
           return () => {
-            if (window.ethereum && typeof window.ethereum.removeListener === 'function') {
-              window.ethereum.removeListener("chainChanged", checkNetwork);
-              window.ethereum.removeListener("accountsChanged", checkNetwork);
+            if (window.flow && typeof window.flow.removeListener === 'function') {
+              window.flow.removeListener("chainChanged", checkNetwork);
+              window.flow.removeListener("accountsChanged", checkNetwork);
             }
           };
         }
@@ -2321,22 +2326,22 @@ export default function GameRoulette() {
         return;
       }
 
-      // Check if ethereum provider exists
-      if (!window.ethereum || typeof window.ethereum.request !== 'function') {
-        alert("No Ethereum wallet detected. Please install a wallet like MetaMask.");
+      // Check if flow provider exists
+      if (!window.flow || typeof window.flow.request !== 'function') {
+        alert("No Flow wallet detected. Please install a wallet like MetaMask.");
         return;
       }
 
-      console.log("Attempting to switch to Mantle Sepolia network");
+      console.log("Attempting to switch to Mantle Testnet network");
 
       try {
-        // Try Mantle Sepolia first
-        await window.ethereum.request({
+        // Try Mantle Testnet first
+        await window.flow.request({
           method: "wallet_switchEthereumChain",
           params: [{ chainId: "0x138b" }],
         });
 
-        console.log("Successfully switched to Mantle Sepolia");
+        console.log("Successfully switched to Mantle Testnet");
         // Set network to correct and reload after short delay
         setCorrectNetwork(true);
         setTimeout(() => window.location.reload(), 1000);
@@ -2347,32 +2352,32 @@ export default function GameRoulette() {
         // If network doesn't exist in wallet (error code 4902), try adding it
         if (switchError.code === 4902) {
           try {
-            console.log("Adding Mantle Sepolia to wallet");
-            await window.ethereum.request({
+            console.log("Adding Mantle Testnet to wallet");
+            await window.flow.request({
               method: "wallet_addEthereumChain",
               params: [
                 {
                   chainId: "0x138b",
-                  chainName: "Mantle Sepolia",
+                  chainName: "Mantle Testnet",
                   nativeCurrency: {
                     name: "Mantle",
                     symbol: "MNT",
                     decimals: 18,
                   },
-                  rpcUrls: ["https://rpc.sepolia.mantle.xyz"],
-                  blockExplorerUrls: ["https://sepolia.mantlescan.xyz"],
+                  rpcUrls: ["https://rpc.testnet.mantle.xyz"],
+                  blockExplorerUrls: ["https://testnet.mantlescan.xyz"],
                 },
               ],
             });
 
             // Try switching again after adding
             try {
-              await window.ethereum.request({
+              await window.flow.request({
                 method: "wallet_switchEthereumChain",
                 params: [{ chainId: "0x138b" }],
               });
 
-              console.log("Successfully switched to Mantle Sepolia after adding");
+              console.log("Successfully switched to Mantle Testnet after adding");
               // Set network to correct and reload after short delay
               setCorrectNetwork(true);
               setTimeout(() => window.location.reload(), 1000);
@@ -2381,12 +2386,12 @@ export default function GameRoulette() {
               console.error("Error switching to Mantle after adding:", error);
             }
           } catch (addError) {
-            console.error("Failed to add Mantle Sepolia:", addError);
+            console.error("Failed to add Mantle Testnet:", addError);
 
-            // If Mantle Sepolia fails, try Pharos Devnet as fallback
+            // If Mantle Testnet fails, try Pharos Devnet as fallback
             try {
               console.log("Adding Pharos Devnet to wallet");
-              await window.ethereum.request({
+              await window.flow.request({
                 method: "wallet_addEthereumChain",
                 params: [
                   {
@@ -2405,7 +2410,7 @@ export default function GameRoulette() {
 
               // Try switching to Pharos
               try {
-                await window.ethereum.request({
+                await window.flow.request({
                   method: "wallet_switchEthereumChain",
                   params: [{ chainId: "0xc352" }],
                 });
@@ -2420,13 +2425,13 @@ export default function GameRoulette() {
               }
             } catch (pharosError) {
               console.error("Failed to add Pharos Devnet:", pharosError);
-              alert("Unable to switch to required networks. Please try adding Mantle Sepolia manually.");
+              alert("Unable to switch to required networks. Please try adding Mantle Testnet manually.");
             }
           }
         } else {
           // Handle other errors
           console.error("Failed to switch network:", switchError);
-          alert("Failed to switch network. Please try again or add Mantle Sepolia manually.");
+          alert("Failed to switch network. Please try again or add Mantle Testnet manually.");
         }
       }
     } catch (error) {
@@ -2609,7 +2614,7 @@ export default function GameRoulette() {
               }}
             >
               <FaCoins className="text-yellow-400" />
-              Balance: {isConnected ? `${parseFloat(userBalance || '0').toFixed(5)} ETH` : 'Connect Wallet'}
+              Balance: {isConnected ? `${parseFloat(userBalance || '0').toFixed(5)} FLOW` : 'Connect Wallet'}
             </Typography>
           </Box>
 
@@ -3105,8 +3110,8 @@ export default function GameRoulette() {
                 <Box sx={{ textAlign: 'center', py: 1 }}>
                   <Button
                     onClick={() => {
-                      if (window.ethereum) {
-                        window.ethereum.request({ method: 'eth_requestAccounts' });
+                      if (window.flow) {
+                        window.flow.request({ method: 'eth_requestAccounts' });
                       }
                     }}
                     sx={{
@@ -3163,7 +3168,7 @@ export default function GameRoulette() {
               />
 
               <Typography color="white" sx={{ opacity: 0.8 }}>
-                Current Bet Total: {total.toFixed(5)} ETH
+                Current Bet Total: {total.toFixed(5)} FLOW
               </Typography>
 
               {/* Quick Bet Buttons */}
@@ -3248,7 +3253,7 @@ export default function GameRoulette() {
                       loading={submitDisabled}
                       onClick={lockBet}
                     >
-                      {total > 0 ? `Place Bet (${total.toFixed(5)} ETH)` : 'Place Bet (ETH)'}
+                      {total > 0 ? `Place Bet (${total.toFixed(5)} FLOW)` : 'Place Bet (FLOW)'}
                     </Button>
                     {submitDisabled && rollResult < 0 && (
                       <Typography color="white" sx={{ opacity: 0.8 }}>
@@ -3590,9 +3595,9 @@ export default function GameRoulette() {
             {notificationIndex === notificationSteps.RESULT_READY && (
               <Typography>
                 {winnings > 0
-                  ? `🎉 You won ${winnings.toFixed(4)} ETH!`
+                  ? `🎉 You won ${winnings.toFixed(4)} FLOW!`
                   : winnings < 0
-                  ? `💸 You lost ${Math.abs(winnings).toFixed(4)} ETH!`
+                  ? `💸 You lost ${Math.abs(winnings).toFixed(4)} FLOW!`
                   : "🤝 Break even!"}
               </Typography>
             )}

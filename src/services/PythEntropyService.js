@@ -31,7 +31,7 @@ class PythEntropyService {
 
   /**
    * Initialize the Pyth Entropy service
-   * @param {string} network - Network name (arbitrum-sepolia, base, etc.)
+   * @param {string} network - Network name (flow-testnet, base, etc.)
    */
   async initialize(network = null) {
     try {
@@ -140,7 +140,7 @@ class PythEntropyService {
         gameConfig: gameConfig,
         metadata: {
           source: 'Pyth Entropy (API)',
-          network: 'arbitrum-sepolia',
+          network: 'flow-testnet',
           algorithm: 'pyth-entropy-hardhat',
           generatedAt: new Date().toISOString()
         }
@@ -167,9 +167,9 @@ class PythEntropyService {
           transactionHash: 'fallback_no_tx',
           blockNumber: null,
           randomValue: Math.floor(Math.random() * 1000000),
-          network: 'arbitrum-sepolia',
-          explorerUrl: 'https://entropy-explorer.pyth.network/?chain=arbitrum-sepolia',
-          arbiscanUrl: 'https://sepolia.arbiscan.io/',
+          network: 'flow-testnet',
+          explorerUrl: 'https://entropy-explorer.pyth.network/?chain=flow-testnet',
+          arbiscanUrl: 'https://testnet.arbiscan.io/',
           timestamp: Date.now(),
           source: 'Pyth Entropy (API Fallback)'
         },
@@ -178,7 +178,7 @@ class PythEntropyService {
         gameConfig: gameConfig,
         metadata: {
           source: 'Pyth Entropy (Fallback)',
-          network: 'arbitrum-sepolia',
+          network: 'flow-testnet',
           algorithm: 'fallback',
           generatedAt: new Date().toISOString()
         }
@@ -192,15 +192,15 @@ class PythEntropyService {
    * @returns {string} Arbiscan URL
    */
   getArbiscanUrl(txHash) {
-    const network = this.network || 'arbitrum-sepolia';
+    const network = this.network || 'flow-testnet';
     
-    if (network === 'arbitrum-sepolia') {
-      return `https://sepolia.arbiscan.io/tx/${txHash}`;
-    } else if (network === 'arbitrum-one') {
+    if (network === 'flow-testnet') {
+      return `https://testnet.arbiscan.io/tx/${txHash}`;
+    } else if (network === 'flow-one') {
       return `https://arbiscan.io/tx/${txHash}`;
     }
     
-    return `https://sepolia.etherscan.io/tx/${txHash}`;
+    return `https://testnet.etherscan.io/tx/${txHash}`;
   }
 
   /**

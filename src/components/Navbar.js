@@ -5,58 +5,61 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { useAccount, useChainId, useWalletClient } from 'wagmi';
 import { useSelector, useDispatch } from 'react-redux';
-import { setBalance, setLoading, loadBalanceFromStorage } from '@/store/balanceSlice';
-import EthereumConnectWalletButton from "./EthereumConnectWalletButton";
+import { setFlowBalance, addToFlowBalance, subtractFromFlowBalance, loadFlowBalanceFromStorage } from '@/store/balanceSlice';
+import FlowConnectWalletButton from "./FlowConnectWalletButton";
 import WithdrawModal from "./WithdrawModal";
 import LiveChat from "./LiveChat";
-import { useGlobalWalletPersistence } from '../hooks/useGlobalWalletPersistence';
-
+import { useFlowWallet } from '../hooks/useFlowWallet';
+import { flowTreasuryService } from '../services/FlowTreasuryService';
+import { FLOW_TREASURY_CONFIG } from '../config/flow';
+import { debugFlowBalance } from '../utils/flowBalanceCheck';
+import { testFlowConnection, withRetry } from '../config/flow';
+import { resetFlowBalance, isFlowBalanceCorrupted } from '../utils/resetFlowBalance';
+import { checkTreasuryBalance, checkLocalTreasuryBalance } from '../utils/checkTreasuryBalance';
 
 import { useNotification } from './NotificationSystem';
-import { TREASURY_CONFIG } from '../config/treasury';
-// Enhanced UserBalanceSystem with deposit functionality
-const UserBalanceSystem = {
+
+// Flow Treasury System - similar to FLOW but for Flow
+const FlowBalanceSystem = {
   getBalance: async (address) => {
-    // Try to get balance from localStorage first (use same key as Redux store)
-    const savedBalance = localStorage.getItem('userBalance');
-    if (savedBalance) {
-      return savedBalance;
+    // Try to get Flow balance from localStorage first
+    const savedFlowBalance = localStorage.getItem('userFlowBalance');
+    if (savedFlowBalance) {
+      return savedFlowBalance;
     }
     // Return zero balance
     return "0";
   },
   
-  deposit: async (userAddress, amount, transactionHash) => {
+  deposit: async (userAddress, amount, transactionId) => {
     try {
-      console.log('Processing deposit:', { userAddress, amount, transactionHash });
+      console.log('Processing Flow deposit:', { userAddress, amount, transactionId });
       
-      // Call deposit API
-      const response = await fetch('/api/deposit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userAddress: userAddress,
-          amount: amount,
-          transactionHash: transactionHash || '0x' + Math.random().toString(16).substr(2, 64)
-        })
-      });
+      // Use the FlowTreasuryService
+      const result = await flowTreasuryService.deposit(userAddress, amount, transactionId);
       
-      const result = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(result.error || 'Deposit failed');
-      }
-      
-      // Don't update balance here - it's already updated in the main deposit function
-      console.log('UserBalanceSystem deposit: API call successful, balance already updated');
+      console.log('FlowBalanceSystem deposit: API call successful, balance already updated');
       
       return result;
     } catch (error) {
-      console.error('Deposit error:', error);
+      console.error('Flow deposit error:', error);
+      throw error;
+    }
+  },
+
+  withdraw: async (userAddress, amount) => {
+    try {
+      console.log('Processing Flow withdrawal:', { userAddress, amount });
+      
+      // Use the FlowTreasuryService
+      const result = await flowTreasuryService.withdraw(userAddress, amount);
+      
+      console.log('FlowBalanceSystem withdrawal: API call successful');
+      
+      return result;
+    } catch (error) {
+      console.error('Flow withdrawal error:', error);
       throw error;
     }
   }
@@ -85,8 +88,8 @@ const MOCK_SEARCH_RESULTS = {
     { id: 'game4', name: 'Plinko', path: '/game/plinko', type: 'Popular' },
   ],
   tournaments: [
-    { id: 'tournament1', name: 'High Roller Tournament', path: '/tournaments/high-roller', prize: '10,000 ETH' },
-    { id: 'tournament2', name: 'Weekend Battle', path: '/tournaments/weekend-battle', prize: '5,000 ETH' },
+    { id: 'tournament1', name: 'High Roller Tournament', path: '/tournaments/high-roller', prize: '10,000 FLOW' },
+    { id: 'tournament2', name: 'Weekend Battle', path: '/tournaments/weekend-battle', prize: '5,000 FLOW' },
   ],
   pages: [
     { id: 'page1', name: 'Bank', path: '/bank', description: 'Deposit and withdraw funds' },
@@ -112,53 +115,48 @@ export default function Navbar() {
   const isDev = process.env.NODE_ENV === 'development';
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const dispatch = useDispatch();
-  const { userBalance, isLoading: isLoadingBalance } = useSelector((state) => state.balance);
+  const { userFlowBalance, isLoading: isLoadingBalance } = useSelector((state) => state.balance);
   const [walletNetworkName, setWalletNetworkName] = useState("");
 
-  // User balance management
+  // Flow balance management
   const [showBalanceModal, setShowBalanceModal] = useState(false);
-  const [withdrawAmount, setWithdrawAmount] = useState("0");
-  const [isWithdrawing, setIsWithdrawing] = useState(false);
-  const [depositAmount, setDepositAmount] = useState("");
-  const [isDepositing, setIsDepositing] = useState(false);
+  const [flowDepositAmount, setFlowDepositAmount] = useState("");
+  const [isFlowDepositing, setIsFlowDepositing] = useState(false);
+  const [flowWithdrawAmount, setFlowWithdrawAmount] = useState("0");
+  const [isFlowWithdrawing, setIsFlowWithdrawing] = useState(false);
+  
   const [showLiveChat, setShowLiveChat] = useState(false);
 
+  // Format Flow balance for display
+  const formatFlowBalance = (balance) => {
+    const numBalance = parseFloat(balance || '0');
+    return numBalance === 0 ? '0' : numBalance.toFixed(5);
+  };
 
-  // Wallet connection with persistence
-  const { isConnected, address } = useAccount();
-  const chainId = useChainId();
-  const { data: walletClient } = useWalletClient();
+
+  // Flow wallet connection
+  const { 
+    isConnected, 
+    address, 
+    isConnecting, 
+    isDisconnecting, 
+    error: walletError,
+    getFlowBalance,
+    transferToTreasury
+  } = useFlowWallet();
   const isWalletReady = isConnected && address;
-  
-  // Use global wallet persistence hook
-  useGlobalWalletPersistence();
 
   // Debug wallet connection
   useEffect(() => {
-    console.log('🔗 Wallet connection state:', { 
+    console.log('🔗 Flow wallet connection state:', { 
       isConnected, 
       address, 
-      chainId, 
-      walletClient: !!walletClient,
+      isConnecting,
+      isDisconnecting,
+      walletError,
       isWalletReady 
     });
-    
-    // Check if wallet is connected but address is not yet available
-    if (isConnected && !address) {
-      console.log('⚠️ Wallet connected but address not yet available, waiting...');
-      // Add a small delay to see if address becomes available
-      const timer = setTimeout(() => {
-        console.log('⏰ After delay - Wallet state:', { 
-          isConnected, 
-          address, 
-          chainId, 
-          walletClient: !!walletClient,
-          isWalletReady 
-        });
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [isConnected, address, chainId, walletClient, isWalletReady]);
+  }, [isConnected, address, isConnecting, isDisconnecting, walletError, isWalletReady]);
 
 
   // Mock notifications for UI purposes
@@ -166,7 +164,7 @@ export default function Navbar() {
     {
       id: '1',
       title: 'Balance Updated',
-      message: 'Your ETH balance has been updated',
+      message: 'Your FLOW balance has been updated',
       isRead: false,
       time: '2 min ago'
     },
@@ -179,76 +177,73 @@ export default function Navbar() {
     }
   ]);
 
-  // Load user balance from house account
-  const loadUserBalance = async () => {
-    if (!address) return;
-    
-    try {
-      dispatch(setLoading(true));
-      
-      // First try to get from localStorage
-      const localBalance = localStorage.getItem(`userBalance_${address}`);
-      console.log('Loading balance from localStorage:', localBalance);
-      
-      if (localBalance && parseFloat(localBalance) > 0) {
-        dispatch(setBalance(localBalance));
-        console.log('Balance loaded from localStorage:', localBalance);
-      } else {
-        // If no local balance, try to get from UserBalanceSystem
-        const balance = await UserBalanceSystem.getBalance(address);
-        console.log('Balance loaded from UserBalanceSystem:', balance);
-        dispatch(setBalance(balance));
-        
-              // Save to localStorage for persistence (use same key as Redux store)
-      localStorage.setItem('userBalance', balance);
-      }
-      
-    } catch (error) {
-      console.error('Error loading user balance:', error);
-      dispatch(setBalance("0"));
-    } finally {
-      dispatch(setLoading(false));
+
+  // Reset Flow balance if it's corrupted
+  const resetFlowBalanceIfCorrupted = () => {
+    const currentBalance = localStorage.getItem('userFlowBalance');
+    if (currentBalance && parseFloat(currentBalance) > 100000) {
+      console.warn('🚨 Detected corrupted Flow balance:', currentBalance, 'Resetting to 0');
+      localStorage.setItem('userFlowBalance', '0');
+      dispatch(setFlowBalance('0'));
+      notification.info('Flow bakiyesi sıfırlandı (bozuk veri tespit edildi)');
     }
   };
 
-  // Load balance from localStorage
-  const loadBalanceFromStorage = (address) => {
-    if (!address) return null;
-    return localStorage.getItem('userBalance');
+  // Load Flow treasury balance (separate from wallet balance)
+  const loadFlowBalance = async () => {
+    if (!address) return;
+    
+    try {
+      // First check for corrupted balance
+      resetFlowBalanceIfCorrupted();
+      
+      // Load Flow treasury balance from localStorage
+      const localFlowBalance = localStorage.getItem(`userFlowBalance_${address}`);
+      console.log('Loading Flow treasury balance from localStorage:', localFlowBalance);
+      
+      if (localFlowBalance && parseFloat(localFlowBalance) >= 0 && parseFloat(localFlowBalance) < 100000) {
+        dispatch(setFlowBalance(localFlowBalance));
+        console.log('Flow treasury balance loaded from localStorage:', localFlowBalance);
+      } else {
+        // Try global Flow balance
+        const globalFlowBalance = localStorage.getItem('userFlowBalance');
+        if (globalFlowBalance && parseFloat(globalFlowBalance) >= 0 && parseFloat(globalFlowBalance) < 100000) {
+          dispatch(setFlowBalance(globalFlowBalance));
+          console.log('Global Flow treasury balance loaded:', globalFlowBalance);
+        } else {
+          dispatch(setFlowBalance("0"));
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error loading Flow treasury balance:', error);
+      dispatch(setFlowBalance("0"));
+    }
   };
+
 
   // Load balance when wallet connects
   useEffect(() => {
     if (isWalletReady && address) {
-      // First try to load from localStorage
-      const savedBalance = loadBalanceFromStorage(address);
-      if (savedBalance && savedBalance !== "0") {
-        console.log('Loading saved balance from localStorage:', savedBalance);
-        dispatch(setBalance(savedBalance));
-      } else {
-        // If no saved balance, load from blockchain
-        loadUserBalance();
-      }
-      
-      // Load deposit history
-      
+      // Load Flow treasury balance
+      loadFlowBalance();
     }
   }, [isWalletReady, address]);
   
-  // Auto-refresh balance every 5 seconds when wallet is connected
+  // Auto-refresh Flow balance every 5 seconds when wallet is connected
   useEffect(() => {
     if (!isWalletReady || !address) return;
     
     const interval = setInterval(() => {
-      const localBalance = localStorage.getItem('userBalance');
-      if (localBalance && localBalance !== userBalance) {
-        console.log('Auto-refreshing balance:', { localBalance, userBalance });
-        dispatch(setBalance(localBalance));
+      const localFlowBalance = localStorage.getItem('userFlowBalance');
+      if (localFlowBalance && localFlowBalance !== userFlowBalance) {
+        console.log('Auto-refreshing Flow balance:', { localFlowBalance, userFlowBalance });
+        dispatch(setFlowBalance(localFlowBalance));
       }
     }, 5000);
     
     return () => clearInterval(interval);
-  }, [isWalletReady, address, userBalance]);
+  }, [isWalletReady, address, userFlowBalance]);
   
   // Load deposit history
 
@@ -257,9 +252,9 @@ export default function Navbar() {
   useEffect(() => {
     const checkWalletConnection = async () => {
       // Check if wallet was previously connected
-      const wasConnected = localStorage.getItem('wagmi.connected');
+      const wasConnected = localStorage.getItem('flow.connected');
       if (wasConnected === 'true') {
-        console.log('🔄 Wallet was previously connected, restoring balance...');
+        console.log('🔄 Flow wallet was previously connected, restoring balance...');
         
         // Restore balance from localStorage
         const savedBalance = localStorage.getItem('userBalance');
@@ -277,13 +272,20 @@ export default function Navbar() {
     setIsClient(true);
     setUnreadNotifications(notifications.filter(n => !n.isRead).length);
     
+    // Check for corrupted Flow balance on startup
+    if (isFlowBalanceCorrupted()) {
+      console.warn('🚨 Corrupted Flow balance detected on startup');
+      resetFlowBalance();
+      return; // Page will reload
+    }
+    
     // Initialize dark mode from local storage if available
     const savedMode = localStorage.getItem('darkMode');
     if (savedMode !== null) {
       setIsDarkMode(savedMode === 'true');
     }
     
-    // Ethereum wallet integration - simplified for testnet only
+    // Flow wallet integration - simplified for testnet only
     // In development mode, use mock data
     if (isDev) {
       setUserAddress('0x1234...dev');
@@ -337,217 +339,253 @@ export default function Navbar() {
     dispatch(setLoading(false));
   };
 
-  // Handle withdraw from house account
-  const handleWithdraw = async () => {
+
+  // Debug treasury balance
+  const debugTreasuryBalance = async () => {
+    console.log('🔍 === TREASURY BALANCE DEBUG ===');
+    
+    // Check local balance
+    const localBalance = checkLocalTreasuryBalance(address);
+    console.log('Local treasury balance:', localBalance);
+    
+    // Check Redux balance
+    console.log('Redux Flow balance:', userFlowBalance);
+    
+    // Check actual treasury balance on-chain
+    const treasuryInfo = await checkTreasuryBalance();
+    console.log('On-chain treasury info:', treasuryInfo);
+    
+    return {
+      local: localBalance,
+      redux: userFlowBalance,
+      onChain: treasuryInfo
+    };
+  };
+
+  // Handle Flow withdraw from treasury
+  const handleFlowWithdraw = async () => {
     if (!isConnected || !address) {
-      notification.error('Please connect your wallet first');
+      notification.error('Please connect your Flow wallet first');
+      return;
+    }
+    
+    // Debug treasury balance first
+    console.log('🔍 Debugging treasury balance before withdrawal...');
+    const balanceInfo = await debugTreasuryBalance();
+    console.log('Balance info:', balanceInfo);
+
+    const amount = parseFloat(flowWithdrawAmount);
+    if (!amount || amount <= 0) {
+      notification.error('Please enter a valid Flow withdrawal amount');
       return;
     }
 
+    // Check if user has sufficient Flow balance in treasury
+    const currentFlowBalance = parseFloat(userFlowBalance || '0');
+    if (currentFlowBalance < amount) {
+      notification.error(`Insufficient Flow treasury balance. You have ${currentFlowBalance} FLOW, but trying to withdraw ${amount} FLOW`);
+      return;
+    }
+
+    // Check withdrawal limits
+    if (amount < FLOW_TREASURY_CONFIG.MIN_WITHDRAW) {
+      notification.error(`Minimum Flow withdrawal amount is ${FLOW_TREASURY_CONFIG.MIN_WITHDRAW} FLOW`);
+      return;
+    }
+
+    if (amount > FLOW_TREASURY_CONFIG.MAX_WITHDRAW) {
+      notification.error(`Maximum Flow withdrawal amount is ${FLOW_TREASURY_CONFIG.MAX_WITHDRAW} FLOW per transaction`);
+      return;
+    }
+
+    setIsFlowWithdrawing(true);
+    console.log('🚀 Starting Flow withdrawal process for:', amount, 'FLOW');
+
     try {
-      setIsWithdrawing(true);
-      const balanceInEth = parseFloat(userBalance || '0');
-      if (balanceInEth <= 0) {
-        notification.error('No balance to withdraw');
-        return;
+      console.log('Withdrawing from Flow treasury:', { address: address, amount });
+
+      // Call Flow withdrawal API
+      const result = await FlowBalanceSystem.withdraw(address, amount);
+      
+      if (result.success) {
+        console.log('🔄 Flow balance update after withdrawal:', { currentFlowBalance, amount });
+        
+        // Use subtractFromFlowBalance for safer arithmetic
+        dispatch(subtractFromFlowBalance(amount));
+        
+        console.log('✅ Flow balance updated in Redux store after withdrawal');
+        
+        notification.success(`Successfully withdrew ${amount} FLOW! Transaction ID: ${result.transactionId?.slice(0, 10)}...`);
+        setFlowWithdrawAmount("0"); // Reset the input
+        
+        // Close modal if it exists
+        setShowWithdrawModal(false);
+      } else {
+        throw new Error(result.error || 'Flow withdrawal failed');
       }
 
-      // Call backend API to process withdrawal from treasury
-      console.log('🔍 Account object:', address);
-      console.log('🔍 Account address:', address);
-      console.log('🔍 Account address type:', typeof address);
-      
-      const response = await fetch('/api/withdraw', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userAddress: address,
-          amount: balanceInEth
-        })
-      });
-
-      const result = await response.json();
-      console.log('🔍 Withdraw API response:', result);
-
-      if (!response.ok) {
-        const errorMessage = result?.error || 'Withdrawal failed';
-        throw new Error(errorMessage);
-      }
-
-      // Update user balance to 0 after successful withdrawal
-      dispatch(setBalance('0'));
-      
-      // Clear localStorage balance
-      localStorage.setItem('userBalance', '0');
-      
-      // Check if transaction hash exists before using it
-      const txHash = result?.transactionHash || 'Unknown';
-      const txDisplay = txHash !== 'Unknown' ? `${txHash.slice(0, 8)}...` : 'Pending';
-      
-      notification.success(`Withdrawal transaction sent! ${balanceInEth.toFixed(5)} ETH will be transferred. TX: ${txDisplay}`);
-      
-      // Close the modal
-      setShowBalanceModal(false);
-      
     } catch (error) {
-      console.error('Withdraw error:', error);
+      console.error('Flow withdrawal error:', error);
       
-      // Ensure error message is a string
+      // Safe error message handling
       const errorMessage = error?.message || 'Unknown error occurred';
       const safeErrorMessage = typeof errorMessage === 'string' ? errorMessage : 'Unknown error occurred';
       
-      notification.error(`Withdrawal failed: ${safeErrorMessage}`);
+      notification.error(`Flow withdrawal failed: ${safeErrorMessage}`);
     } finally {
-      setIsWithdrawing(false);
+      setIsFlowWithdrawing(false);
     }
   };
 
-  // Handle deposit to house balance
-  const handleDeposit = async () => {
+
+  // Handle Flow deposit to treasury
+  const handleFlowDeposit = async () => {
     // Prevent multiple simultaneous deposits
-    if (isDepositing) {
-      console.log('🚫 Deposit already in progress, ignoring duplicate call');
+    if (isFlowDepositing) {
+      console.log('🚫 Flow deposit already in progress, ignoring duplicate call');
       return;
     }
     
     if (!isConnected || !address) {
-      notification.error('Please connect your wallet first');
+      notification.error('Please connect your Flow wallet first');
       return;
     }
 
-    const amount = parseFloat(depositAmount);
+    const amount = parseFloat(flowDepositAmount);
     if (!amount || amount <= 0) {
-      notification.error('Please enter a valid deposit amount');
+      notification.error('Please enter a valid Flow deposit amount');
       return;
     }
     
     // Check deposit limits
-    if (amount < TREASURY_CONFIG.LIMITS.MIN_DEPOSIT) {
-      notification.error(`Minimum deposit amount is ${TREASURY_CONFIG.LIMITS.MIN_DEPOSIT} ETH`);
-      return;
-    }
-    
-    if (amount > TREASURY_CONFIG.LIMITS.MAX_DEPOSIT) {
-      notification.error(`Maximum deposit amount is ${TREASURY_CONFIG.LIMITS.MAX_DEPOSIT} ETH`);
+    if (amount < FLOW_TREASURY_CONFIG.MIN_DEPOSIT) {
+      notification.error(`Minimum Flow deposit amount is ${FLOW_TREASURY_CONFIG.MIN_DEPOSIT} FLOW`);
       return;
     }
 
-    setIsDepositing(true);
-    console.log('🚀 Starting deposit process for:', amount, 'ETH');
+    setIsFlowDepositing(true);
+    console.log('🚀 Starting Flow deposit process for:', amount, 'FLOW');
+    
     try {
-      console.log('Depositing to house balance:', { address: address, amount });
+      console.log('Depositing to Flow treasury:', { address: address, amount });
       
-      // Check if MetaMask is available
-      if (!window.ethereum) {
-        throw new Error('MetaMask is not installed');
+      // Test Flow connection first
+      console.log('🔍 Testing Flow connection...');
+      const connectionOk = await testFlowConnection();
+      if (!connectionOk) {
+        throw new Error('Flow network connection failed. Please check your internet connection and try again.');
       }
       
-      // Request account access if not already connected
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      const userAccount = accounts[0];
+      // Get user's Flow balance first to check if they have enough
+      console.log('🔍 Checking user Flow balance for address:', address);
       
-      // Check if user is on Sepolia network
-      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-      const expectedChainId = TREASURY_CONFIG.NETWORK.CHAIN_ID;
+      // Run debug check to see all balance methods with retry
+      const debugResult = await withRetry(() => debugFlowBalance(address));
+      console.log('🔍 Debug balance results:', debugResult);
       
-      if (chainId !== expectedChainId) {
-        // Try to switch to Sepolia
-        try {
-          await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: expectedChainId }],
-          });
-        } catch (switchError) {
-          // If Sepolia is not added, add it
-          if (switchError.code === 4902) {
-            await window.ethereum.request({
-              method: 'wallet_addEthereumChain',
-              params: [{
-                chainId: expectedChainId,
-                chainName: TREASURY_CONFIG.NETWORK.CHAIN_NAME,
-                nativeCurrency: {
-                  name: 'Sepolia ETH',
-                  symbol: 'ETH',
-                  decimals: 18
-                },
-                rpcUrls: [TREASURY_CONFIG.NETWORK.RPC_URL],
-                blockExplorerUrls: [TREASURY_CONFIG.NETWORK.EXPLORER_URL]
-              }]
-            });
-          } else {
-            throw new Error(`Please switch to ${TREASURY_CONFIG.NETWORK.CHAIN_NAME} network`);
-          }
-        }
+      const userFlowBalance = await withRetry(() => getFlowBalance());
+      console.log('🔍 Retrieved Flow balance from hook:', userFlowBalance, typeof userFlowBalance);
+      
+      // Try alternative balance if main method returns 0
+      let actualBalance = userFlowBalance;
+      if (!userFlowBalance || parseFloat(userFlowBalance) === 0) {
+        console.log('🔄 Main balance query returned 0, trying native balance...');
+        actualBalance = debugResult?.native || 0;
+        console.log('🔄 Native balance result:', actualBalance);
       }
       
-      // Casino treasury address from config
-      const TREASURY_ADDRESS = TREASURY_CONFIG.ADDRESS;
+      if (!actualBalance || parseFloat(actualBalance) < amount) {
+        console.error('❌ Insufficient Flow balance detected:', {
+          hookBalance: userFlowBalance,
+          nativeBalance: debugResult?.native,
+          detailedCheck: debugResult?.detailed,
+          parsedBalance: parseFloat(actualBalance || '0'),
+          requiredAmount: amount,
+          userAddress: address
+        });
+        
+        // Provide more helpful error message
+        const balanceStr = actualBalance ? parseFloat(actualBalance).toFixed(4) : '0';
+        throw new Error(`Yetersiz Flow bakiyesi. Mevcut bakiyeniz: ${balanceStr} FLOW, gerekli miktar: ${amount} FLOW. Lütfen cüzdanınızda yeterli Flow olduğundan emin olun.`);
+      }
       
-      // Convert amount to Wei (18 decimals)
-      const amountWei = (amount * 10**18).toString();
+      console.log('✅ Flow balance check passed:', actualBalance, 'FLOW available');
+
+      // Execute real Flow transaction to send FLOW from user wallet to treasury
+      console.log('💡 Sending FLOW from user wallet to treasury:', address, '→', FLOW_TREASURY_CONFIG.ADDRESS);
       
-      // Send transaction to treasury
-      const transactionParameters = {
-        to: TREASURY_ADDRESS,
-        from: userAccount,
-        value: '0x' + parseInt(amountWei).toString(16), // Convert to hex
-        gas: TREASURY_CONFIG.GAS.DEPOSIT_LIMIT, // Gas limit from config
-      };
+      notification.info('Executing Flow transaction...');
       
-      console.log('Sending transaction to MetaMask:', transactionParameters);
+      // Execute the real Flow transaction
+      console.log('💡 Executing Flow transaction...');
+      const transaction = await transferToTreasury(amount, FLOW_TREASURY_CONFIG.ADDRESS);
       
-      // Request transaction from MetaMask
-      const txHash = await window.ethereum.request({
-        method: 'eth_sendTransaction',
-        params: [transactionParameters],
+      if (!transaction || (!transaction.id && !transaction.transactionId)) {
+        throw new Error('İşlem tamamlanamadı. Lütfen tekrar deneyin.');
+      }
+      
+      console.log('✅ Flow transaction completed:', transaction);
+      
+      // Safe transaction ID handling
+      const txId = transaction?.id || transaction?.transactionId || 'unknown';
+      const shortTxId = typeof txId === 'string' && txId.length > 10 ? txId.slice(0, 10) + '...' : txId;
+      
+      notification.success(`Flow işlemi başarılı! ID: ${shortTxId}`);
+      
+      // After successful transaction, update local Flow balance
+      const currentFlowBalance = parseFloat(userFlowBalance || '0');
+      const depositAmount = parseFloat(amount);
+      
+      console.log('🔄 Flow balance update before dispatch:', { 
+        currentFlowBalance, 
+        depositAmount,
+        userFlowBalanceRaw: userFlowBalance,
+        amountRaw: amount
       });
       
-      console.log('Transaction sent:', txHash);
+      // Use addToFlowBalance for safer arithmetic
+      dispatch(addToFlowBalance(depositAmount));
       
-      // Wait for transaction confirmation
-      notification.info(`Transaction sent! Hash: ${txHash.slice(0, 10)}...`);
+      console.log('✅ Flow balance updated in Redux store');
       
-      // Wait for confirmation (you can implement proper confirmation checking here)
-      await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
-      
-      // After successful transaction, update local balance
-      const currentBalance = parseFloat(userBalance || '0');
-      const newBalance = (currentBalance + amount).toString();
-      
-      console.log('🔄 Balance update before dispatch:', { currentBalance, amount, newBalance });
-      
-      // Update Redux store immediately (this will also update localStorage)
-      dispatch(setBalance(newBalance));
-      
-      console.log('✅ Balance updated in Redux store');
-      
-      // Call deposit API to record the transaction (optional - for logging purposes only)
+      // Call Flow deposit API to record the transaction
       try {
         if (address) {
-          const result = await UserBalanceSystem.deposit(address, amount, txHash);
-          console.log('✅ Deposit recorded in API:', result);
+          const txId = transaction?.id || transaction?.transactionId || `flow_tx_${Date.now()}`;
+          const result = await FlowBalanceSystem.deposit(address, amount, txId);
+          console.log('✅ Flow deposit recorded in API:', result);
         } else {
-          console.warn('Account address not available for API call');
+          console.warn('Flow account address not available for API call');
         }
         
       } catch (apiError) {
-        console.warn('⚠️ Could not record deposit in API:', apiError);
+        console.warn('⚠️ Could not record Flow deposit in API:', apiError);
         // Don't fail the deposit if API call fails - balance is already updated
       }
       
-      notification.success(`Successfully deposited ${amount} ETH to casino treasury! TX: ${txHash.slice(0, 10)}...`);
-      
-      setDepositAmount("");
-      
-      
+      notification.success(`Successfully deposited ${amount} FLOW to your treasury balance!`);
+      setFlowDepositAmount(""); // Clear the input
       
     } catch (error) {
-      console.error('Deposit error:', error);
-      notification.error(`Deposit failed: ${error.message}`);
+      console.error('Flow deposit error:', error);
+      
+      // Provide user-friendly error messages in Turkish
+      let errorMessage = error.message;
+      if (error.message.includes('network') || error.message.includes('connection')) {
+        errorMessage = 'Ağ bağlantısı hatası. Lütfen internet bağlantınızı kontrol edin ve tekrar deneyin.';
+      } else if (error.message.includes('insufficient') || error.message.includes('Yetersiz')) {
+        errorMessage = error.message; // Already in Turkish
+      } else if (error.message.includes('transaction')) {
+        errorMessage = 'İşlem başarısız oldu. Lütfen cüzdanınızı kontrol edin ve tekrar deneyin.';
+      } else if (error.message.includes('timeout')) {
+        errorMessage = 'İşlem zaman aşımına uğradı. Lütfen tekrar deneyin.';
+      } else {
+        errorMessage = `Flow deposit hatası: ${error.message}`;
+      }
+      
+      notification.error(errorMessage);
     } finally {
-      setIsDepositing(false);
+      setIsFlowDepositing(false);
     }
   };
 
@@ -640,18 +678,18 @@ export default function Navbar() {
 
   // Pyth Entropy handles randomness generation
 
-  // Detect Ethereum wallet network (best-effort)
+  // Detect Flow wallet network (best-effort)
   useEffect(() => {
     const readNetwork = async () => {
       try {
-        if (typeof window !== 'undefined' && window.ethereum?.network) {
-          const n = await window.ethereum.network();
+        if (typeof window !== 'undefined' && window.flow?.network) {
+          const n = await window.flow.network();
           if (n?.name) setWalletNetworkName(String(n.name).toLowerCase());
         }
       } catch {}
     };
     readNetwork();
-    const off = window?.ethereum?.onNetworkChange?.((n) => {
+    const off = window?.flow?.onNetworkChange?.((n) => {
       try { setWalletNetworkName(String(n?.name || '').toLowerCase()); } catch {}
     });
     return () => {
@@ -956,8 +994,8 @@ export default function Navbar() {
                 <div className="bg-gradient-to-r from-green-900/20 to-green-800/10 rounded-lg border border-green-800/30 px-3 py-2">
                   <div className="flex items-center space-x-2">
                     <span className="text-xs text-gray-300">Balance:</span>
-                    <span className="text-sm text-green-300 font-medium">
-                      {isLoadingBalance ? 'Loading...' : `${parseFloat(userBalance || '0').toFixed(5)} ETH`}
+                    <span className="text-sm text-blue-300 font-medium">
+                      {isLoadingBalance ? 'Loading...' : `${formatFlowBalance(userFlowBalance)} FLOW`}
                     </span>
                     <button
                       onClick={() => setShowBalanceModal(true)}
@@ -970,13 +1008,13 @@ export default function Navbar() {
               </div>
             )}
             
-            {/* Pyth Entropy Status */}
+            {/* Flow Testnet Status */}
             {isConnected && (
               <div className="px-3 py-2 bg-gradient-to-r from-blue-500/20 to-purple-600/20 border border-blue-500/30 text-blue-300 font-medium rounded-lg flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                 </svg>
-                Pyth Entropy
+                Flow Testnet
               </div>
             )}
             
@@ -991,8 +1029,8 @@ export default function Navbar() {
               Live Chat
             </button>
             
-            {/* Ethereum Wallet Button */}
-            <EthereumConnectWalletButton />
+            {/* Flow Wallet Button */}
+            <FlowConnectWalletButton />
       
           </div>
         </div>
@@ -1044,10 +1082,10 @@ export default function Navbar() {
                 <div className="pt-2 mt-2 border-t border-purple-500/10">
                   <div className="p-3 bg-gradient-to-r from-green-900/20 to-green-800/10 rounded-lg border border-green-800/30">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm text-gray-300">House Balance:</span>
-                                      <span className="text-sm text-green-300 font-medium">
-                      {isLoadingBalance ? 'Loading...' : `${parseFloat(userBalance || '0').toFixed(5)} ETH`}
-                    </span>
+                      <span className="text-sm text-gray-300">FLOW Balance:</span>
+                      <span className="text-sm text-blue-300 font-medium">
+                        {isLoadingBalance ? 'Loading...' : `${formatFlowBalance(userFlowBalance)} FLOW`}
+                      </span>
                     </div>
                     <button
                       onClick={() => {
@@ -1088,7 +1126,7 @@ export default function Navbar() {
               aria-modal="true"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-white">House Balance</h3>
+                <h3 className="text-lg font-semibold text-white">FLOW Treasury</h3>
                 <button
                   onClick={() => setShowBalanceModal(false)}
                   className="text-gray-400 hover:text-white transition-colors"
@@ -1100,36 +1138,38 @@ export default function Navbar() {
               </div>
               
               {/* Current Balance */}
-              <div className="mb-4 p-3 bg-gradient-to-r from-green-900/20 to-green-800/10 rounded-lg border border-green-800/30">
-                <span className="text-sm text-gray-300">Current Balance:</span>
-                <div className="text-lg text-green-300 font-bold">
-                  {isLoadingBalance ? 'Loading...' : `${parseFloat(userBalance || '0').toFixed(5)} ETH`}
+              <div className="mb-4">
+                <div className="p-3 bg-gradient-to-r from-blue-900/20 to-blue-800/10 rounded-lg border border-blue-800/30">
+                  <span className="text-sm text-gray-300">Current Balance:</span>
+                  <div className="text-lg text-blue-300 font-bold">
+                    {isLoadingBalance ? 'Loading...' : `${formatFlowBalance(userFlowBalance)} FLOW`}
+                  </div>
                 </div>
               </div>
               
-              {/* Deposit Section */}
+              {/* Flow Deposit Section */}
               <div className="mb-6">
-                <h4 className="text-sm font-medium text-white mb-2">Deposit ETH to Casino Treasury</h4>
+                <h4 className="text-sm font-medium text-white mb-2">Deposit FLOW to Treasury</h4>
                 <div className="text-xs text-gray-400 mb-2">
-                  Treasury: {TREASURY_CONFIG.ADDRESS.slice(0, 10)}...{TREASURY_CONFIG.ADDRESS.slice(-8)}
+                  Treasury: {FLOW_TREASURY_CONFIG.ADDRESS.slice(0, 10)}...{FLOW_TREASURY_CONFIG.ADDRESS.slice(-8)}
                 </div>
                 <div className="flex gap-2">
                   <input
                     type="number"
-                    value={depositAmount}
-                    onChange={(e) => setDepositAmount(e.target.value)}
-                    placeholder="Enter ETH amount"
-                    className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded text-white placeholder-gray-400 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/25"
+                    value={flowDepositAmount}
+                    onChange={(e) => setFlowDepositAmount(e.target.value)}
+                    placeholder="Enter FLOW amount"
+                    className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/25"
                     min="0"
                     step="0.00000001"
-                    disabled={isDepositing}
+                    disabled={isFlowDepositing}
                   />
                   <button
-                    onClick={handleDeposit}
-                    disabled={!isConnected || !depositAmount || parseFloat(depositAmount) <= 0 || isDepositing}
-                    className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white rounded font-medium transition-colors flex items-center gap-2"
+                    onClick={handleFlowDeposit}
+                    disabled={!isConnected || !flowDepositAmount || parseFloat(flowDepositAmount) <= 0 || isFlowDepositing}
+                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white rounded font-medium transition-colors flex items-center gap-2"
                   >
-                    {isDepositing ? (
+                    {isFlowDepositing ? (
                       <>
                         <div className="animate-spin w-4 h-4 border-2 border-white/20 border-t-white rounded-full"></div>
                         Depositing...
@@ -1145,18 +1185,18 @@ export default function Navbar() {
                   </button>
                 </div>
                 <p className="text-xs text-gray-400 mt-1">
-                  Transfer ETH from your wallet to house balance for gaming
+                  Transfer FLOW from your wallet to house balance for gaming
                 </p>
                 {/* Quick Deposit Buttons */}
                 <div className="flex gap-1 mt-2">
-                  {[0.001, 0.01, 0.1, 1].map((amount) => (
+                  {[100, 500, 1000, 5000].map((amount) => (
                     <button
                       key={amount}
-                      onClick={() => setDepositAmount(amount.toString())}
+                      onClick={() => setFlowDepositAmount(amount.toString())}
                       className="flex-1 px-2 py-1 text-xs bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 rounded transition-colors"
-                      disabled={isDepositing}
+                      disabled={isFlowDepositing}
                     >
-                      {amount} ETH
+                      {amount} FLOW
                     </button>
                   ))}
                 </div>
@@ -1165,29 +1205,48 @@ export default function Navbar() {
 
               {/* Withdraw Section */}
               <div className="mb-4">
-                <h4 className="text-sm font-medium text-white mb-2">Withdraw All ETH</h4>
+                <h4 className="text-sm font-medium text-white mb-2">Withdraw FLOW</h4>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="number"
+                    value={flowWithdrawAmount}
+                    onChange={(e) => setFlowWithdrawAmount(e.target.value)}
+                    placeholder="Enter amount to withdraw"
+                    className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/25"
+                    min="0"
+                    step="0.00000001"
+                    disabled={isFlowWithdrawing}
+                  />
+                  <button
+                    onClick={handleFlowWithdraw}
+                    disabled={!isConnected || parseFloat(userFlowBalance || '0') <= 0 || isFlowWithdrawing || !flowWithdrawAmount || parseFloat(flowWithdrawAmount) <= 0}
+                    className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white rounded font-medium transition-colors flex items-center gap-2"
+                  >
+                    {isFlowWithdrawing ? (
+                      <>
+                        <div className="animate-spin w-4 h-4 border-2 border-white/20 border-t-white rounded-full"></div>
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        Withdraw
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                      </>
+                    )}
+                  </button>
+                </div>
                 <button
-                  onClick={handleWithdraw}
-                  disabled={!isConnected || parseFloat(userBalance || '0') <= 0 || isWithdrawing}
-                  className="w-full px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white rounded font-medium transition-colors flex items-center justify-center gap-2"
+                  onClick={() => setFlowWithdrawAmount(userFlowBalance || '0')}
+                  disabled={!isConnected || parseFloat(userFlowBalance || '0') <= 0 || isFlowWithdrawing}
+                  className="w-full px-4 py-2 bg-gray-700/50 hover:bg-gray-600/50 disabled:bg-gray-800/50 disabled:cursor-not-allowed text-gray-300 rounded text-sm transition-colors"
                 >
-                  {isWithdrawing ? (
-                    <>
-                      <div className="animate-spin w-4 h-4 border-2 border-white/20 border-t-white rounded-full"></div>
-                      Processing...
-                    </>
-                  ) : isConnected ? (
-                    parseFloat(userBalance || '0') > 0 ? 'Withdraw All ETH' : 'No Balance'
-                  ) : 'Connect Wallet'}
-                  {isConnected && parseFloat(userBalance || '0') > 0 && !isWithdrawing && (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                    </svg>
-                  )}
+                  Withdraw All ({formatFlowBalance(userFlowBalance)} FLOW)
                 </button>
-                {isConnected && parseFloat(userBalance || '0') > 0 && (
+                {isConnected && parseFloat(userFlowBalance || '0') > 0 && (
                   <p className="text-xs text-gray-400 mt-1 text-center">
-                    Withdraw {parseFloat(userBalance || '0').toFixed(5)} ETH to your wallet
+                    Available: {formatFlowBalance(userFlowBalance)} FLOW
                   </p>
                 )}
               </div>

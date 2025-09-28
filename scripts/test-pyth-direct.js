@@ -6,7 +6,7 @@ async function main() {
   // Get signer
   const [deployer] = await ethers.getSigners();
   console.log("Using account:", deployer.address);
-  console.log("Account balance:", ethers.formatEther(await deployer.provider.getBalance(deployer.address)), "ETH");
+  console.log("Account balance:", ethers.formatEther(await deployer.provider.getBalance(deployer.address)), "FLOW");
 
   // Pyth Entropy contract address
   const pythEntropyAddress = "0x549ebba8036ab746611b4ffa1423eb0a4df61440";
@@ -30,7 +30,7 @@ async function main() {
 
     console.log("\n🔍 Getting fee...");
     const fee = await pythContract.getFee(provider);
-    console.log("Fee:", ethers.formatEther(fee), "ETH");
+    console.log("Fee:", ethers.formatEther(fee), "FLOW");
 
     console.log("\n🔍 Testing direct request...");
     const userRandomNumber = ethers.keccak256(ethers.toUtf8Bytes("test_" + Date.now()));

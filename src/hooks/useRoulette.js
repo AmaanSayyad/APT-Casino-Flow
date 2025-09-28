@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { getRouletteContract, getTokenContract, parseTokenAmount, switchToMantleSepolia } from '../utils/web3';
+import { getRouletteContract, getTokenContract, parseTokenAmount, switchToMantleTestnet } from '../utils/web3';
 
 export const BetType = {
   NUMBER: 0,
@@ -25,7 +25,7 @@ export const useRoulette = () => {
 
     try {
       // First ensure we're on the correct network
-      await switchToMantleSepolia();
+      await switchToMantleTestnet();
 
       const tokenContract = await getTokenContract(true);
       const rouletteContract = await getRouletteContract(true);

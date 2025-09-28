@@ -46,7 +46,7 @@ const StatsOverview = () => {
                 </span>
               )}
             </div>
-            <p className="text-xs uppercase mt-1 text-white/70">Total ETH Pool</p>
+            <p className="text-xs uppercase mt-1 text-white/70">Total FLOW Pool</p>
           </div>
           
           <div className="flex flex-col items-center">
@@ -59,7 +59,7 @@ const StatsOverview = () => {
                 </span>
               )}
             </div>
-            <p className="text-xs uppercase mt-1 text-white/70">ETH APY</p>
+            <p className="text-xs uppercase mt-1 text-white/70">FLOW APY</p>
           </div>
           
           <div className="flex flex-col items-center">
@@ -72,7 +72,7 @@ const StatsOverview = () => {
                 </span>
               )}
             </div>
-            <p className="text-xs uppercase mt-1 text-white/70">ETH Price</p>
+            <p className="text-xs uppercase mt-1 text-white/70">FLOW Price</p>
           </div>
           
           <div className="flex flex-col items-center">

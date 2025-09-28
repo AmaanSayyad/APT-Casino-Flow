@@ -9,7 +9,7 @@ async function main() {
   // Get signer
   const [deployer] = await ethers.getSigners();
   console.log("Using account:", deployer.address);
-  console.log("Account balance:", ethers.formatEther(await deployer.provider.getBalance(deployer.address)), "ETH");
+  console.log("Account balance:", ethers.formatEther(await deployer.provider.getBalance(deployer.address)), "FLOW");
 
   // Get contract instance
   const CasinoEntropyConsumer = await ethers.getContractFactory("CasinoEntropyConsumer");
@@ -22,7 +22,7 @@ async function main() {
     console.log("Treasury Address:", contractInfo[1]);
     console.log("Total Requests:", contractInfo[2].toString());
     console.log("Total Fulfilled:", contractInfo[3].toString());
-    console.log("Contract Balance:", ethers.formatEther(contractInfo[4]), "ETH");
+    console.log("Contract Balance:", ethers.formatEther(contractInfo[4]), "FLOW");
   } catch (error) {
     console.error("❌ Error getting contract info:", error.message);
   }
@@ -35,7 +35,7 @@ async function main() {
     
     // Check if we have enough balance
     const balance = await deployer.provider.getBalance(deployer.address);
-    console.log("Account balance:", ethers.formatEther(balance), "ETH");
+    console.log("Account balance:", ethers.formatEther(balance), "FLOW");
     
     // Try to estimate gas first
     try {
@@ -85,7 +85,7 @@ async function main() {
     console.log("Pyth Provider:", provider);
     
     const fee = await pythContract.getFee(provider);
-    console.log("Pyth Fee:", ethers.formatEther(fee), "ETH");
+    console.log("Pyth Fee:", ethers.formatEther(fee), "FLOW");
     
   } catch (error) {
     console.error("❌ Error checking Pyth contract:", error.message);

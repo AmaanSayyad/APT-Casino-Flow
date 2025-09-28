@@ -1,5 +1,5 @@
 {
-  "network": "arbitrum-sepolia",
+  "network": "flow-testnet",
   "chainId": "421614",
   "contractAddress": "0x3670108F005C480500d424424ecB09A2896b64e9",
   "pythEntropyAddress": "0x549ebba8036ab746611b4ffa1423eb0a4df61440",

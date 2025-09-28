@@ -37,15 +37,15 @@ const GameHistoryCard = ({ game, gameType }) => {
   };
 
   const openTransaction = (txHash, logIndex) => {
-    const network = process.env.NEXT_PUBLIC_NETWORK || 'arbitrum-sepolia';
+    const network = process.env.NEXT_PUBLIC_NETWORK || 'flow-testnet';
     let explorerUrl;
     
-    if (network === 'arbitrum-sepolia') {
-      explorerUrl = `https://sepolia.arbiscan.io/tx/${txHash}#eventlog`;
-    } else if (network === 'arbitrum-one') {
+    if (network === 'flow-testnet') {
+      explorerUrl = `https://testnet.arbiscan.io/tx/${txHash}#eventlog`;
+    } else if (network === 'flow-one') {
       explorerUrl = `https://arbiscan.io/tx/${txHash}#eventlog`;
     } else {
-      explorerUrl = `https://sepolia.etherscan.io/tx/${txHash}#eventlog`;
+      explorerUrl = `https://testnet.etherscan.io/tx/${txHash}#eventlog`;
     }
     
     window.open(explorerUrl, '_blank');
@@ -139,7 +139,7 @@ const GameHistoryCard = ({ game, gameType }) => {
                 Bet Amount:
               </Typography>
               <Typography variant="body1" sx={{ color: 'white', fontWeight: 'bold' }}>
-                {game.betAmount} ETH
+                {game.betAmount} FLOW
               </Typography>
             </Grid>
             <Grid item xs={6}>
@@ -147,7 +147,7 @@ const GameHistoryCard = ({ game, gameType }) => {
                 Payout:
               </Typography>
               <Typography variant="body1" sx={{ color: 'white', fontWeight: 'bold' }}>
-                {game.payout || '0'} ETH
+                {game.payout || '0'} FLOW
               </Typography>
             </Grid>
           </Grid>

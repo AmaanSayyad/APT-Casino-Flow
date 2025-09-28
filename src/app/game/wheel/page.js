@@ -89,7 +89,7 @@ export default function Home() {
     // Check if wallet is connected first
     console.log('🔌 Wheel Bet - Wallet Status:', { isConnected, userBalance });
     if (!isConnected) {
-      alert("Please connect your Ethereum wallet first to play Wheel!");
+      alert("Please connect your Flow wallet first to play Wheel!");
       return;
     }
 
@@ -152,11 +152,11 @@ export default function Home() {
     }
   };
 
-    // Check Redux balance (balance is already in ETH)
+    // Check Redux balance (balance is already in FLOW)
     const currentBalance = parseFloat(userBalance || '0');
     
     if (currentBalance < betAmount) {
-      alert(`Insufficient balance. You have ${currentBalance.toFixed(5)} ETH but need ${betAmount} ETH`);
+      alert(`Insufficient balance. You have ${currentBalance.toFixed(5)} FLOW but need ${betAmount} FLOW`);
       return;
     }
 
@@ -165,15 +165,15 @@ export default function Home() {
       setHasSpun(false);
 
       console.log('=== STARTING WHEEL BET WITH REDUX BALANCE ===');
-      console.log('Bet amount (ETH):', betAmount);
-      console.log('Current balance (ETH):', currentBalance);
+      console.log('Bet amount (FLOW):', betAmount);
+      console.log('Current balance (FLOW):', currentBalance);
       console.log('Sectors:', noOfSegments);
       
       // Deduct bet amount from Redux balance
       const newBalance = (parseFloat(userBalance || '0') - betAmount).toString();
       dispatch(setBalance(newBalance));
       
-      console.log('Balance deducted. New balance:', parseFloat(newBalance).toFixed(5), 'ETH');
+      console.log('Balance deducted. New balance:', parseFloat(newBalance).toFixed(5), 'FLOW');
       
       // Set up callback to handle wheel animation completion
       window.wheelBetCallback = async (landedMultiplier) => {
@@ -224,8 +224,8 @@ export default function Home() {
             randomValue: Math.floor(Math.random() * 1000000),
             randomNumber: Math.floor(Math.random() * 1000000),
             transactionHash: 'generating...',
-            arbiscanUrl: 'https://sepolia.arbiscan.io/',
-            explorerUrl: 'https://entropy-explorer.pyth.network/?chain=arbitrum-sepolia',
+            arbiscanUrl: 'https://testnet.arbiscan.io/',
+            explorerUrl: 'https://entropy-explorer.pyth.network/?chain=flow-testnet',
             timestamp: Date.now(),
             source: 'Generating...'
           };
@@ -237,7 +237,7 @@ export default function Home() {
           
           // Show result and update balance immediately
           if (actualMultiplier > 0) {
-            notification.success(`Congratulations! ${betAmount} ETH × ${actualMultiplier.toFixed(2)} = ${winAmount.toFixed(5)} ETH won!`);
+            notification.success(`Congratulations! ${betAmount} FLOW × ${actualMultiplier.toFixed(2)} = ${winAmount.toFixed(5)} FLOW won!`);
             
             // Update balance with winnings
             const currentBalance = parseFloat(userBalance || '0');
@@ -286,7 +286,7 @@ export default function Home() {
   }) => {
     // Check if wallet is connected first
     if (!isConnected) {
-      alert('Please connect your Ethereum wallet first to play Wheel!');
+      alert('Please connect your Flow wallet first to play Wheel!');
       return;
     }
     
@@ -329,7 +329,7 @@ export default function Home() {
       });
       
       if (currentBalance < currentBet) {
-        alert(`Insufficient balance for bet ${i + 1}. Need ${currentBet.toFixed(5)} ETH but have ${currentBalance.toFixed(5)} ETH`);
+        alert(`Insufficient balance for bet ${i + 1}. Need ${currentBet.toFixed(5)} FLOW but have ${currentBalance.toFixed(5)} FLOW`);
         break;
       }
 
@@ -432,7 +432,7 @@ export default function Home() {
       
       // Show notification for win
       if (actualMultiplier > 0) {
-        notification.success(`Congratulations! ${currentBet} ETH × ${actualMultiplier.toFixed(2)} = ${winAmount.toFixed(8)} ETH won!`);
+        notification.success(`Congratulations! ${currentBet} FLOW × ${actualMultiplier.toFixed(2)} = ${winAmount.toFixed(8)} FLOW won!`);
       }
 
       // Store history entry
@@ -504,8 +504,8 @@ export default function Home() {
     // Sample statistics
     const gameStatistics = {
       totalBets: '1,856,342',
-      totalVolume: '8.3M ETH',
-      maxWin: '243,500 ETH'
+      totalVolume: '8.3M FLOW',
+      maxWin: '243,500 FLOW'
     };
     
     return (
@@ -682,7 +682,7 @@ export default function Home() {
               setGameMode={setGameMode}
               betAmount={betAmount}
               setBetAmount={setBetAmount}
-              balance={parseFloat(userBalance || '0')} // Balance is already in ETH
+              balance={parseFloat(userBalance || '0')} // Balance is already in FLOW
               manulBet={manulBet}
               risk={selectedRisk}
               setRisk={setSelectedRisk}

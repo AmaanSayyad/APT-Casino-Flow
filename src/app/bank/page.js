@@ -8,12 +8,12 @@ import LendingTable from "@/components/LendingTable";
 import Image from "next/image";
 import { FaChartLine, FaHistory, FaInfoCircle, FaExchangeAlt, FaCoins, FaWallet, FaLock, FaUnlock } from "react-icons/fa";
 
-  // Assets for borrowing on Ethereum testnet only
+  // Assets for borrowing on Flow testnet only
 const BORROW_ASSETS = {
   ethereum_testnet: [
     {
-      symbol: "ETH",
-      name: "Arbitrum Sepolia Coin",
+      symbol: "FLOW",
+      name: "Flow Testnet Coin",
       iconColor: "#F1324D",
       address: null // Native token
     }
@@ -22,13 +22,13 @@ const BORROW_ASSETS = {
 
 // Mock transaction history
 const MOCK_TRANSACTIONS = [
-  { type: 'deposit', token: 'ETH', amount: '120.5', date: new Date(Date.now() - 86400000 * 2), status: 'completed' },
+  { type: 'deposit', token: 'FLOW', amount: '120.5', date: new Date(Date.now() - 86400000 * 2), status: 'completed' },
   { type: 'borrow', token: 'MNT', amount: '0.3', date: new Date(Date.now() - 86400000), status: 'completed' },
-  { type: 'swap', tokenFrom: 'MNT', tokenTo: 'ETH', amountFrom: '0.2', amountTo: '98.32', date: new Date(), status: 'completed' }
+  { type: 'swap', tokenFrom: 'MNT', tokenTo: 'FLOW', amountFrom: '0.2', amountTo: '98.32', date: new Date(), status: 'completed' }
 ];
 
 export default function Bank() {
-  const [chainId, setChainId] = useState('ethereum_testnet'); // Default to Ethereum testnet
+  const [chainId, setChainId] = useState('ethereum_testnet'); // Default to Flow testnet
   const [assets, setAssets] = useState([]);
   const [isClient, setIsClient] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,11 +63,11 @@ export default function Bank() {
     
     // In development mode, use mock data
     if (isDev) {
-      setChainId('ethereum_testnet'); // Ethereum testnet for development
+      setChainId('ethereum_testnet'); // Flow testnet for development
       setAssets([
         {
-          symbol: "ETH",
-          name: "Arbitrum Sepolia Coin",
+          symbol: "FLOW",
+          name: "Flow Testnet Coin",
           iconColor: "#F1324D",
           address: "0x...",
           apr: "12.5%",
@@ -84,8 +84,8 @@ export default function Bank() {
           available: "$320,000"
         },
         {
-          symbol: "ETH",
-          name: "Ethereum",
+          symbol: "FLOW",
+          name: "Flow",
           iconColor: "#2196F3",
           address: null,
           apr: "4.8%",
@@ -101,17 +101,17 @@ export default function Bank() {
       return;
     }
     
-    // Load Ethereum testnet data
+    // Load Flow testnet data
     const loadChainData = async () => {
       try {
-        // Set to Ethereum testnet
+        // Set to Flow testnet
         setChainId('ethereum_testnet');
         
-        // Set mock lending market data for Ethereum testnet
+        // Set mock lending market data for Flow testnet
         setAssets([
           {
-            symbol: "ETH",
-            name: "Arbitrum Sepolia Coin",
+            symbol: "FLOW",
+            name: "Flow Testnet Coin",
             iconColor: "#F1324D",
             address: "0x...",
             apr: "12.5%",
@@ -142,7 +142,7 @@ export default function Bank() {
     loadChainData();
   }, [isDev]);
   
-  // Get appropriate borrow assets for Ethereum testnet
+  // Get appropriate borrow assets for Flow testnet
   const borrowAssets = BORROW_ASSETS.ethereum_testnet;
   
   // Animated number component for stats
@@ -190,7 +190,7 @@ export default function Bank() {
         {showNetworkBanner && (
           <div className="bg-gradient-to-r from-red-magic/80 to-blue-magic/80 py-2 px-4 text-center relative mb-8 rounded-lg">
             <p className="text-white text-sm">
-              Connected to Arbitrum Sepolia Testnet. 
+              Connected to Flow Testnet Testnet. 
               <button className="underline ml-2">Switch Network</button>
             </p>
             <button 
@@ -245,10 +245,10 @@ export default function Bank() {
             <>
               <div className="max-w-2xl mx-auto mb-12">
                 <div className="bg-gradient-to-r p-[1px] from-red-magic to-blue-magic rounded-xl">
-                  {/* Ethereum Testnet Only - No Uniswap Integration */}
+                  {/* Flow Testnet Only - No Uniswap Integration */}
         <div className="bg-gray-800 rounded-lg p-6 text-center">
-          <h3 className="text-xl font-semibold text-white mb-2">Arbitrum Sepolia Testnet Only</h3>
-          <p className="text-gray-400">This application works exclusively with Arbitrum testnet</p>
+          <h3 className="text-xl font-semibold text-white mb-2">Flow Testnet Testnet Only</h3>
+          <p className="text-gray-400">This application works exclusively with Flow testnet</p>
         </div>
                 </div>
               </div>
@@ -264,7 +264,7 @@ export default function Bank() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="bg-[#250020] p-4 rounded-lg hover:bg-[#350030] transition-colors">
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-white/70 text-sm">ETH Price</span>
+                        <span className="text-white/70 text-sm">FLOW Price</span>
                         <div className="flex items-center">
                           <div className="h-2 w-16 bg-[#120010] rounded-full overflow-hidden">
                             <div 
@@ -413,7 +413,7 @@ export default function Bank() {
               </p>
               <ul className="space-y-2 mb-4">
                 <li className="flex justify-between">
-                  <span className="text-white/60">ETH</span>
+                  <span className="text-white/60">FLOW</span>
                   <span className="text-green-500">12.5% APY</span>
                 </li>
                 <li className="flex justify-between">

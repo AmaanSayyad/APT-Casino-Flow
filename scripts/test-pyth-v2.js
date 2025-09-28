@@ -6,7 +6,7 @@ async function main() {
   // Get signer
   const [deployer] = await ethers.getSigners();
   console.log("Using account:", deployer.address);
-  console.log("Account balance:", ethers.formatEther(await deployer.provider.getBalance(deployer.address)), "ETH");
+  console.log("Account balance:", ethers.formatEther(await deployer.provider.getBalance(deployer.address)), "FLOW");
 
   // Pyth Entropy contract address
   const pythEntropyAddress = "0x549ebba8036ab746611b4ffa1423eb0a4df61440";
@@ -42,7 +42,7 @@ async function main() {
     // Test getFeeV2 with default gas limit
     try {
       const defaultFee = await pythContract.getFeeV2();
-      console.log("✅ getFeeV2() (default):", ethers.formatEther(defaultFee), "ETH");
+      console.log("✅ getFeeV2() (default):", ethers.formatEther(defaultFee), "FLOW");
     } catch (error) {
       console.log("❌ getFeeV2() (default) failed:", error.message);
     }
@@ -51,7 +51,7 @@ async function main() {
     try {
       const customGasLimit = 100000; // Reduced gas limit for faster execution
       const customFee = await pythContract.getFeeV2(customGasLimit);
-      console.log(`✅ getFeeV2(${customGasLimit}):`, ethers.formatEther(customFee), "ETH");
+      console.log(`✅ getFeeV2(${customGasLimit}):`, ethers.formatEther(customFee), "FLOW");
     } catch (error) {
       console.log("❌ getFeeV2(custom) failed:", error.message);
     }
@@ -64,7 +64,7 @@ async function main() {
     try {
       const customGasLimit = 200000;
       fee = await pythContract.getFeeV2(customGasLimit);
-      console.log("Fee:", ethers.formatEther(fee), "ETH");
+      console.log("Fee:", ethers.formatEther(fee), "FLOW");
     } catch (error) {
       console.log("Using default fee");
       fee = ethers.parseEther("0.001");

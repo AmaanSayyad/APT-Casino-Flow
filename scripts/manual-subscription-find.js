@@ -23,7 +23,7 @@ async function main() {
         const subscription = await checkContract.getSubscription(i);
         if (subscription.owner.toLowerCase() === deployer.address.toLowerCase()) {
           console.log(`\n🎉 Found our subscription: ${i}`);
-          console.log("  - Balance:", ethers.formatEther(subscription.balance), "ETH");
+          console.log("  - Balance:", ethers.formatEther(subscription.balance), "FLOW");
           console.log("  - Request Count:", subscription.reqCount.toString());
           console.log("  - Consumers:", subscription.consumers);
           

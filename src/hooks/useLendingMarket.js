@@ -1,19 +1,19 @@
 "use client";
 import { useState, useEffect } from 'react';
 
-// Mock data for Ethereum testnet lending market
+// Mock data for Flow testnet lending market
 const MOCK_LENDING_DATA = {
   userDeposits: [
     {
-      symbol: 'ETH',
-      name: 'Arbitrum Sepolia Coin',
+      symbol: 'FLOW',
+      name: 'Flow Testnet Coin',
       amount: '25.5',
       apy: '8.2',
       iconColor: '#F1324D'
     },
     {
-      symbol: 'ETH',
-      name: 'ETH Casino Token',
+      symbol: 'FLOW',
+      name: 'FLOW Casino Token',
       amount: '500.0',
       apy: '12.5',
       iconColor: '#34C759'
@@ -21,16 +21,16 @@ const MOCK_LENDING_DATA = {
   ],
   userBorrows: [
     {
-      symbol: 'ETH',
-      name: 'Arbitrum Sepolia Coin',
+      symbol: 'FLOW',
+      name: 'Flow Testnet Coin',
       amount: '5.0',
       apy: '15.2',
       iconColor: '#F1324D'
     }
   ],
   marketRates: {
-    ETH: { apy: '8.2', ltv: '0.7' },
-    ETH: { apy: '12.5', ltv: '0.6' }
+    FLOW: { apy: '8.2', ltv: '0.7' },
+    FLOW: { apy: '12.5', ltv: '0.6' }
   }
 };
 
@@ -40,7 +40,7 @@ export const useLendingMarket = () => {
   const [marketRates, setMarketRates] = useState(MOCK_LENDING_DATA.marketRates);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Mock functions for Ethereum testnet
+  // Mock functions for Flow testnet
   const depositAsset = async (asset, amount) => {
     setIsLoading(true);
     try {

@@ -5,7 +5,7 @@ async function main() {
 
   const [deployer] = await ethers.getSigners();
   console.log("Using account:", deployer.address);
-  console.log("Account balance:", ethers.formatEther(await deployer.provider.getBalance(deployer.address)), "ETH");
+  console.log("Account balance:", ethers.formatEther(await deployer.provider.getBalance(deployer.address)), "FLOW");
 
   const subscriptionId = "453";
   const vrfCoordinatorAddress = "0x50d47e4142598E3411aA864e08a44284e471AC6f";
@@ -25,7 +25,7 @@ async function main() {
     // Check subscription details
     const subscription = await vrfCoordinator.getSubscription(subscriptionId);
     console.log("\n💰 Subscription Details:");
-    console.log("  - Balance:", ethers.formatEther(subscription.balance), "ETH");
+    console.log("  - Balance:", ethers.formatEther(subscription.balance), "FLOW");
     console.log("  - Request Count:", subscription.reqCount.toString());
     console.log("  - Owner:", subscription.owner);
     console.log("  - Consumers:", subscription.consumers);
@@ -43,7 +43,7 @@ async function main() {
     
     // Try to fund with smaller amount
     if (subscription.balance === 0n) {
-      console.log("\n💰 Attempting to fund subscription with 0.005 ETH...");
+      console.log("\n💰 Attempting to fund subscription with 0.005 FLOW...");
       const fundABI = [
         "function fundSubscriptionWithNative(uint64 subId) external payable"
       ];
@@ -55,11 +55,11 @@ async function main() {
         });
         console.log("Transaction hash:", fundTx.hash);
         await fundTx.wait();
-        console.log("✅ Subscription funded with 0.005 ETH!");
+        console.log("✅ Subscription funded with 0.005 FLOW!");
         
         // Check balance again
         const updatedSubscription = await vrfCoordinator.getSubscription(subscriptionId);
-        console.log("💰 Updated Balance:", ethers.formatEther(updatedSubscription.balance), "ETH");
+        console.log("💰 Updated Balance:", ethers.formatEther(updatedSubscription.balance), "FLOW");
         
       } catch (error) {
         console.error("❌ Error funding subscription:", error.message);

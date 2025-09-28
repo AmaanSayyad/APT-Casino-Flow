@@ -23,7 +23,7 @@ graph TB
     end
     
     subgraph Blockchain["Blockchain Layer"]
-        M[Arbitrum Sepolia] --> N[CasinoEntropyConsumer]
+        M[Flow Testnet] --> N[CasinoEntropyConsumer]
         N --> O[Pyth Entropy]
         O --> P[Pyth Network]
     end
@@ -86,7 +86,7 @@ flowchart TD
     J --> K
     
     K --> L{Network Check}
-    L -->|Arbitrum Sepolia| M[Connection Success]
+    L -->|Flow Testnet| M[Connection Success]
     L -->|Wrong Network| N[Switch Network]
     
     N --> O{User Approves?}

@@ -4,7 +4,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 // Environment (server-side only)
-const RPC_URL = process.env.NEXT_PUBLIC_ARBITRUM_SEPOLIA_RPC || 'https://sepolia-rollup.arbitrum.io/rpc';
+const RPC_URL = process.env.NEXT_PUBLIC_ARBITRUM_SEPOLIA_RPC || 'https://testnet-rollup.flow.io/rpc';
 const CASINO_ADDRESS = process.env.NEXT_PUBLIC_YELLOW_CASINO_ADDRESS || '';
 const CASINO_PRIVKEY = process.env.CASINO_WALLET_PRIVATE_KEY || process.env.TREASURY_PRIVATE_KEY || '';
 

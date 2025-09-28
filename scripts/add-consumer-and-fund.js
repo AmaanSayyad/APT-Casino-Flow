@@ -1,8 +1,8 @@
 const { ethers } = require("hardhat");
 
-// Arbitrum Sepolia VRF Configuration
+// Flow Testnet VRF Configuration
 const VRF_CONFIG = {
-  COORDINATOR: "0x6D80646bEAdd07cE68cab36c27c626790bBcf17f", // Arbitrum Sepolia VRF Coordinator
+  COORDINATOR: "0x6D80646bEAdd07cE68cab36c27c626790bBcf17f", // Flow Testnet VRF Coordinator
   SUBSCRIPTION_ID: "2719622116", // Subscription ID from transaction (0xa21a23e4)
 };
 
@@ -18,7 +18,7 @@ async function main() {
   // Get the deployer account
   const [deployer] = await ethers.getSigners();
   console.log("Using account:", deployer.address);
-  console.log("Account balance:", ethers.formatEther(await deployer.provider.getBalance(deployer.address)), "ETH");
+  console.log("Account balance:", ethers.formatEther(await deployer.provider.getBalance(deployer.address)), "FLOW");
 
   // Get VRF Consumer contract address
   const vrfConsumerAddress = process.env.NEXT_PUBLIC_VRF_CONTRACT_ADDRESS || "0xacA996A4d49e7Ed42dA68a20600F249BE6d024A4";
@@ -37,15 +37,15 @@ async function main() {
     await addConsumerTx.wait();
     console.log("✅ Consumer added to subscription!");
 
-    // Step 2: Fund subscription with ETH (0.01 ETH)
-    console.log("\n💰 Step 2: Funding subscription with 0.01 ETH...");
+    // Step 2: Fund subscription with FLOW (0.01 FLOW)
+    console.log("\n💰 Step 2: Funding subscription with 0.01 FLOW...");
     const fundAmount = ethers.parseEther("0.01");
     const fundTx = await vrfCoordinator.fundSubscriptionWithNative(VRF_CONFIG.SUBSCRIPTION_ID, {
       value: fundAmount
     });
     console.log("Transaction hash:", fundTx.hash);
     await fundTx.wait();
-    console.log("✅ Subscription funded with 0.02 ETH!");
+    console.log("✅ Subscription funded with 0.02 FLOW!");
 
     // Step 3: Update VRF Consumer contract with subscription ID
     console.log("\n🔄 Step 3: Updating VRF Consumer contract...");
@@ -62,15 +62,15 @@ async function main() {
     console.log("=====================================");
     
     console.log("\n🔗 Explorer Links:");
-    console.log(`VRF Coordinator: https://sepolia.arbiscan.io/address/${VRF_CONFIG.COORDINATOR}`);
-    console.log(`VRF Consumer: https://sepolia.arbiscan.io/address/${vrfConsumerAddress}`);
+    console.log(`VRF Coordinator: https://testnet.arbiscan.io/address/${VRF_CONFIG.COORDINATOR}`);
+    console.log(`VRF Consumer: https://testnet.arbiscan.io/address/${vrfConsumerAddress}`);
 
   } catch (error) {
     console.error("❌ Error configuring VRF subscription:", error.message);
     
     if (error.message.includes("insufficient funds")) {
-      console.log("\n💡 Solution: Get more ARB ETH from faucet:");
-      console.log("https://faucet.triangleplatform.com/arbitrum/sepolia");
+      console.log("\n💡 Solution: Get more ARB FLOW from faucet:");
+      console.log("https://faucet.triangleplatform.com/flow/testnet");
     }
     
     if (error.message.includes("InvalidSubscription")) {

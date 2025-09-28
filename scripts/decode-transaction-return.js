@@ -47,7 +47,7 @@ async function main() {
         
         const subscription = await checkContract.getSubscription(result);
         console.log("\n📋 Subscription Details:");
-        console.log("  - Balance:", ethers.formatEther(subscription.balance), "ETH");
+        console.log("  - Balance:", ethers.formatEther(subscription.balance), "FLOW");
         console.log("  - Request Count:", subscription.reqCount.toString());
         console.log("  - Owner:", subscription.owner);
         console.log("  - Consumers:", subscription.consumers);
@@ -115,7 +115,7 @@ async function main() {
             const subscription = await checkContract.getSubscription(i);
             if (subscription.owner.toLowerCase() === deployer.address.toLowerCase()) {
               console.log(`🎉 Found our subscription: ${i}`);
-              console.log("  - Balance:", ethers.formatEther(subscription.balance), "ETH");
+              console.log("  - Balance:", ethers.formatEther(subscription.balance), "FLOW");
               console.log("  - Request Count:", subscription.reqCount.toString());
               console.log("  - Consumers:", subscription.consumers);
               break;

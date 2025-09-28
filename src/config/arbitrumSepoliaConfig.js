@@ -1,47 +1,47 @@
 /**
- * Arbitrum Sepolia Configuration for Yellow Network Casino
- * Optimized for Arbitrum Sepolia testnet with Yellow Network integration
+ * Flow Testnet Configuration for Yellow Network Casino
+ * Optimized for Flow Testnet testnet with Yellow Network integration
  */
 
-import { arbitrumSepolia } from 'viem/chains';
+import { arbitrumTestnet } from 'viem/chains';
 
-// Arbitrum Sepolia Chain Configuration
+// Flow Testnet Chain Configuration
 export const ARBITRUM_SEPOLIA_CONFIG = {
   chainId: 421614,
-  name: 'Arbitrum Sepolia',
-  network: 'arbitrum-sepolia',
+  name: 'Flow Testnet',
+  network: 'flow-testnet',
   nativeCurrency: {
     decimals: 18,
-    name: 'Ethereum',
-    symbol: 'ETH',
+    name: 'Flow',
+    symbol: 'FLOW',
   },
   rpcUrls: {
     default: {
-      http: ['https://sepolia-rollup.arbitrum.io/rpc'],
+      http: ['https://testnet-rollup.flow.io/rpc'],
     },
     public: {
-      http: ['https://sepolia-rollup.arbitrum.io/rpc'],
+      http: ['https://testnet-rollup.flow.io/rpc'],
     },
   },
   blockExplorers: {
     default: {
-      name: 'Arbiscan Sepolia',
-      url: 'https://sepolia.arbiscan.io',
+      name: 'Arbiscan Testnet',
+      url: 'https://testnet.arbiscan.io',
     },
   },
   testnet: true,
 };
 
-// Arbitrum Sepolia Tokens
+// Flow Testnet Tokens
 export const ARBITRUM_SEPOLIA_TOKENS = {
-  ETH: {
-    symbol: 'ETH',
-    name: 'Ethereum',
+  FLOW: {
+    symbol: 'FLOW',
+    name: 'Flow',
     decimals: 18,
     address: '0x0000000000000000000000000000000000000000',
     isNative: true,
     icon: '⟠',
-    faucet: 'https://faucet.arbitrum.io'
+    faucet: 'https://faucet.flow.io'
   },
   USDC: {
     symbol: 'USDC',
@@ -50,22 +50,22 @@ export const ARBITRUM_SEPOLIA_TOKENS = {
     address: '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d',
     isStablecoin: true,
     icon: '💰',
-    faucet: 'https://faucet.arbitrum.io'
+    faucet: 'https://faucet.flow.io'
   }
 };
 
-// Yellow Network Configuration for Arbitrum Sepolia
+// Yellow Network Configuration for Flow Testnet
 export const YELLOW_ARBITRUM_CONFIG = {
   clearNodeUrl: 'wss://testnet.clearnode.yellow.org/ws',
   apiUrl: 'https://testnet.clearnode.yellow.org/api',
-  defaultToken: ARBITRUM_SEPOLIA_TOKENS.ETH,
+  defaultToken: ARBITRUM_SEPOLIA_TOKENS.FLOW,
   supportedTokens: Object.values(ARBITRUM_SEPOLIA_TOKENS),
   
   // Casino specific settings
   casino: {
-    minBet: '0.001', // 0.001 ETH
-    maxBet: '1.0',   // 1 ETH
-    defaultBet: '0.01', // 0.01 ETH
+    minBet: '0.001', // 0.001 FLOW
+    maxBet: '1.0',   // 1 FLOW
+    defaultBet: '0.01', // 0.01 FLOW
     
     // Game specific settings
     games: {
@@ -97,17 +97,17 @@ export const YELLOW_ARBITRUM_CONFIG = {
   // State channel settings
   stateChannel: {
     channelTimeout: 3600, // 1 hour
-    maxChannelValue: '10', // 10 ETH
-    minChannelValue: '0.01', // 0.01 ETH
+    maxChannelValue: '10', // 10 FLOW
+    minChannelValue: '0.01', // 0.01 FLOW
     settlementDelay: 300, // 5 minutes
-    autoRefillThreshold: '0.1' // Auto refill when below 0.1 ETH
+    autoRefillThreshold: '0.1' // Auto refill when below 0.1 FLOW
   }
 };
 
 // Faucet URLs
 export const ARBITRUM_SEPOLIA_FAUCETS = {
-  primary: 'https://faucet.arbitrum.io',
-  secondary: 'https://sepoliafaucet.com',
+  primary: 'https://faucet.flow.io',
+  secondary: 'https://testnetfaucet.com',
   usdc: 'https://faucet.circle.com'
 };
 
@@ -119,32 +119,32 @@ export const ARBITRUM_SEPOLIA_CONTRACTS = {
 };
 
 // Network switching helper
-export const switchToArbitrumSepolia = async () => {
-  if (typeof window === 'undefined' || !window.ethereum) {
+export const switchToArbitrumTestnet = async () => {
+  if (typeof window === 'undefined' || !window.flow) {
     throw new Error('MetaMask not found');
   }
 
   try {
-    // Try to switch to Arbitrum Sepolia
-    await window.ethereum.request({
+    // Try to switch to Flow Testnet
+    await window.flow.request({
       method: 'wallet_switchEthereumChain',
       params: [{ chainId: '0x66eee' }], // 421614 in hex
     });
   } catch (switchError) {
     // If network doesn't exist, add it
     if (switchError.code === 4902) {
-      await window.ethereum.request({
+      await window.flow.request({
         method: 'wallet_addEthereumChain',
         params: [{
           chainId: '0x66eee',
-          chainName: 'Arbitrum Sepolia',
+          chainName: 'Flow Testnet',
           nativeCurrency: {
-            name: 'Ethereum',
-            symbol: 'ETH',
+            name: 'Flow',
+            symbol: 'FLOW',
             decimals: 18,
           },
-          rpcUrls: ['https://sepolia-rollup.arbitrum.io/rpc'],
-          blockExplorerUrls: ['https://sepolia.arbiscan.io'],
+          rpcUrls: ['https://testnet-rollup.flow.io/rpc'],
+          blockExplorerUrls: ['https://testnet.arbiscan.io'],
         }],
       });
     } else {

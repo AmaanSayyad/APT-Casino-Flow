@@ -55,7 +55,7 @@ async function main() {
     
     // Try to get contract info from Arbiscan
     console.log("\n🔍 Checking Arbiscan for contract info...");
-    console.log(`Arbiscan URL: https://sepolia.arbiscan.io/address/${pythEntropyAddress}`);
+    console.log(`Arbiscan URL: https://testnet.arbiscan.io/address/${pythEntropyAddress}`);
     
   } catch (error) {
     console.error("❌ Error:", error.message);

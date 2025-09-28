@@ -19,6 +19,11 @@ dist/
 .env.test.local
 .env.production.local
 
+# Flow environment variables
+.env.flow
+.env.testnet
+.env.mainnet
+
 # IDE and editor files
 .vscode/
 .idea/
@@ -99,9 +104,50 @@ public
 tmp/
 temp/
 
-# Hardhat files
+# Project specific temporary files
+temp_*.cdc
+check_balance.cdc
+withdraw.cdc
+replace_eth_with_flow.js
+
+# Flow project files with sensitive data
+flow.json
+!flow.json.example
+
+# APT Casino specific
+apt-casino/
+
+# Hardhat files (legacy Ethereum tools)
 cache/
 artifacts/
+
+# Flow CLI files
+flow.json
+*.cdc
+cadence/
+transactions/
+scripts/
+flow-accounts.json
+flow-config.json
+
+# Flow development files
+.flow/
+flow-state/
+flow-emulator-state/
+
+# Flow private keys and sensitive data
+*private-key*
+*-key.json
+*-keys.json
+flow-service-account.json
+
+# Flow build outputs
+flow-build/
+flow-dist/
+
+# Flow testing
+flow-test-results/
+flow-coverage/
 
 # TypeScript
 *.tsbuildinfo

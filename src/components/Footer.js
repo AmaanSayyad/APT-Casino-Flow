@@ -27,8 +27,8 @@ export default function Footer() {
   ];
   
   const paymentMethods = [
-    { name: "ETH", icon: "/icons/eth.svg" },
-    { name: "ETH", icon: "/icons/apt.svg" },
+    { name: "FLOW", icon: "/icons/flow.svg" },
+    { name: "FLOW", icon: "/icons/apt.svg" },
   ];
   
   const handleSubscribe = (e) => {
@@ -66,8 +66,8 @@ export default function Footer() {
           <div className="p-[1px] bg-gradient-to-r from-red-magic/40 to-blue-magic/40 rounded-lg mb-6 hover:from-red-magic hover:to-blue-magic transition-all duration-300">
             <div className="bg-[#120010] rounded-lg p-4">
               <p className="text-white/80 text-sm leading-relaxed">
-                APT-Casino is your ultimate destination for Arbitrum gaming. Experience transparency, fairness,
-                and excitement powered by Arbitrum blockchain technology.
+                APT-Casino is your ultimate destination for Flow gaming. Experience transparency, fairness,
+                and excitement powered by Flow blockchain technology.
               </p>
             </div>
           </div>

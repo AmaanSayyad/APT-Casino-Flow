@@ -4,24 +4,11 @@ import * as React from 'react';
 import { Provider } from 'react-redux';
 import { store } from '@/store';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { WalletStatusProvider } from '@/hooks/useWalletStatus';
 import { NotificationProvider } from '@/components/NotificationSystem';
-import WalletConnectionGuard from '@/components/WalletConnectionGuard';
 import { ThemeProvider } from 'next-themes';
-import { WagmiProvider, createConfig, http } from 'wagmi';
-import { arbitrumSepolia } from 'wagmi/chains';
-import { RainbowKitProvider, getDefaultConfig, connectorsForWallets } from '@rainbow-me/rainbowkit';
-import { 
-  metaMaskWallet,
-  walletConnectWallet,
-  injectedWallet,
-  rainbowWallet,
-  coinbaseWallet,
-  trustWallet
-} from '@rainbow-me/rainbowkit/wallets';
-import '@rainbow-me/rainbowkit/styles.css';
 import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import '@/config/flow'; // Initialize Flow configuration
 
 const queryClient = new QueryClient();
 
@@ -106,71 +93,25 @@ export default function Providers({ children }) {
 
   // Debug logging
   console.log('🔧 Providers mounting...');
-  console.log('🔧 Project ID: 226b43b703188d269fb70d02c107c34e');
-
-  // RainbowKit configuration for Arbitrum
-  let config;
-  
-  try {
-    config = getDefaultConfig({
-      appName: 'APT Casino',
-      projectId: '226b43b703188d269fb70d02c107c34e',
-      chains: [arbitrumSepolia],
-      ssr: true,
-    });
-    console.log('🔧 Config created with getDefaultConfig:', config);
-  } catch (error) {
-    console.error('❌ Error creating config with getDefaultConfig:', error);
-    
-    // Fallback to manual config
-    const connectors = connectorsForWallets([
-      {
-        groupName: 'Popular',
-        wallets: [
-          metaMaskWallet,
-          walletConnectWallet,
-          injectedWallet,
-          rainbowWallet,
-          coinbaseWallet,
-          trustWallet,
-        ],
-      },
-    ], {
-      appName: 'APT Casino',
-      projectId: '226b43b703188d269fb70d02c107c34e',
-    });
-
-    config = createConfig({
-      connectors,
-      chains: [arbitrumSepolia],
-    transports: {
-      [arbitrumSepolia.id]: http(),
-    },
-      ssr: true,
-    });
-    console.log('🔧 Config created with manual setup:', config);
-  }
+  console.log('🔧 Flow Testnet configuration loaded');
 
   return (
     <Provider store={store}>
-      <WagmiProvider config={config}>
-        <QueryClientProvider client={queryClient}>
-          <RainbowKitProvider>
-            <NotificationProvider>
-              <WalletStatusProvider>
-                <WalletConnectionGuard>
-                  <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-                    <MuiThemeProvider theme={muiTheme}>
-                      <CssBaseline />
-                      {children}
-                    </MuiThemeProvider>
-                  </ThemeProvider>
-                </WalletConnectionGuard>
-              </WalletStatusProvider>
-            </NotificationProvider>
-          </RainbowKitProvider>
-        </QueryClientProvider>
-      </WagmiProvider>
+      <QueryClientProvider client={queryClient}>
+        <NotificationProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem={false}
+            disableTransitionOnChange
+          >
+            <MuiThemeProvider theme={muiTheme}>
+              <CssBaseline />
+              {children}
+            </MuiThemeProvider>
+          </ThemeProvider>
+        </NotificationProvider>
+      </QueryClientProvider>
     </Provider>
   );
 }

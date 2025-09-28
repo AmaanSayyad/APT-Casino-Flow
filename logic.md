@@ -66,11 +66,11 @@ Network and contract configuration:
 ```javascript
 export const PYTH_ENTROPY_CONFIG = {
   NETWORKS: {
-    'arbitrum-sepolia': {
+    'flow-testnet': {
       chainId: 421614,
       entropyContract: '0x549ebba8036ab746611b4ffa1423eb0a4df61440',
       entropyProvider: '0x6CC14824Ea2918f5De5C2f75A9Da968ad4BD6344',
-      rpcUrl: 'https://sepolia-rollup.arbitrum.io/rpc'
+      rpcUrl: 'https://testnet-rollup.flow.io/rpc'
     }
   }
 };
@@ -272,7 +272,7 @@ Each random generation includes:
 ### 1. Generate Random for Plinko
 ```javascript
 const pythService = new PythEntropyService();
-await pythService.initialize('arbitrum-sepolia');
+await pythService.initialize('flow-testnet');
 
 const result = await pythService.generateRandom('PLINKO', {
   rows: 12
@@ -305,9 +305,9 @@ const gameResult = processor.processEntropy(result.randomValue, {
 ## Network Configuration
 
 Currently supports:
-- Arbitrum Sepolia (testnet) - Primary
-- Arbitrum One (mainnet) - Planned
-- Base Sepolia (testnet) - Planned
+- Flow Testnet (testnet) - Primary
+- Flow One (mainnet) - Planned
+- Base Testnet (testnet) - Planned
 - Base (mainnet) - Planned
 - Blast (mainnet) - Planned
 

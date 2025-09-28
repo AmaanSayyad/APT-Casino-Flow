@@ -8,7 +8,7 @@ export default function GameHistory({ history }) {
   // Open Entropy Explorer link
   const openEntropyExplorer = (txHash) => {
     if (txHash) {
-      const entropyExplorerUrl = `https://entropy-explorer.pyth.network/?chain=arbitrum-sepolia&search=${txHash}`;
+      const entropyExplorerUrl = `https://entropy-explorer.pyth.network/?chain=flow-testnet&search=${txHash}`;
       window.open(entropyExplorerUrl, '_blank');
     }
   };
@@ -16,15 +16,15 @@ export default function GameHistory({ history }) {
   // Open Arbiscan link for transaction hash
   const openArbiscan = (hash) => {
     if (hash && hash !== 'unknown') {
-      const network = process.env.NEXT_PUBLIC_NETWORK || 'arbitrum-sepolia';
+      const network = process.env.NEXT_PUBLIC_NETWORK || 'flow-testnet';
       let explorerUrl;
       
-      if (network === 'arbitrum-sepolia') {
-        explorerUrl = `https://sepolia.arbiscan.io/tx/${hash}`;
-      } else if (network === 'arbitrum-one') {
+      if (network === 'flow-testnet') {
+        explorerUrl = `https://testnet.arbiscan.io/tx/${hash}`;
+      } else if (network === 'flow-one') {
         explorerUrl = `https://arbiscan.io/tx/${hash}`;
       } else {
-        explorerUrl = `https://sepolia.etherscan.io/tx/${hash}`;
+        explorerUrl = `https://testnet.etherscan.io/tx/${hash}`;
       }
       
       window.open(explorerUrl, '_blank');

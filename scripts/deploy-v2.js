@@ -10,7 +10,7 @@ async function main() {
 
   // Pyth Entropy contract addresses
   const PYTH_ENTROPY_ADDRESSES = {
-    'arbitrum-sepolia': '0x549ebba8036ab746611b4ffa1423eb0a4df61440', // Official Pyth Entropy contract
+    'flow-testnet': '0x549ebba8036ab746611b4ffa1423eb0a4df61440', // Official Pyth Entropy contract
   };
 
   const network = await ethers.provider.getNetwork();

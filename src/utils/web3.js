@@ -2,10 +2,10 @@ import { ethers } from 'ethers';
 import { NETWORKS, CONTRACTS } from '../config/contracts';
 
 export const getProvider = () => {
-  if (typeof window === 'undefined' || !window.ethereum) {
+  if (typeof window === 'undefined' || !window.flow) {
     return new ethers.JsonRpcProvider(NETWORKS.PHAROS_SEPOLIA.rpcUrls[0]);
   }
-  return new ethers.BrowserProvider(window.ethereum);
+  return new ethers.BrowserProvider(window.flow);
 };
 
 export const getTokenContract = async (withSigner = false) => {
@@ -29,8 +29,8 @@ export const getRouletteContract = async (withSigner = false) => {
   
   // Get the current chain ID
   let chainId;
-  if (typeof window !== 'undefined' && window.ethereum) {
-    chainId = await window.ethereum.request({ method: 'eth_chainId' });
+  if (typeof window !== 'undefined' && window.flow) {
+    chainId = await window.flow.request({ method: 'eth_chainId' });
   }
 
   // Select the appropriate contract address based on the network
@@ -52,17 +52,17 @@ export const getRouletteContract = async (withSigner = false) => {
   return contract;
 };
 
-export const switchToPharosSepolia = async () => {
-  if (typeof window === 'undefined' || !window.ethereum) return;
+export const switchToPharosTestnet = async () => {
+  if (typeof window === 'undefined' || !window.flow) return;
 
   try {
-    await window.ethereum.request({
+    await window.flow.request({
       method: 'wallet_switchEthereumChain',
       params: [{ chainId: NETWORKS.PHAROS_SEPOLIA.chainId }],
     });
   } catch (error) {
     if (error.code === 4902) {
-      await window.ethereum.request({
+      await window.flow.request({
         method: 'wallet_addEthereumChain',
         params: [NETWORKS.PHAROS_SEPOLIA],
       });

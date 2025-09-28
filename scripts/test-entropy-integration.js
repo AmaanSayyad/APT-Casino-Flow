@@ -5,7 +5,7 @@ async function testEntropyIntegration() {
   
   try {
     // Get the provider
-    const provider = new ethers.JsonRpcProvider('https://sepolia-rollup.arbitrum.io/rpc');
+    const provider = new ethers.JsonRpcProvider('https://testnet-rollup.flow.io/rpc');
     console.log('✅ Provider connected');
     
     // Check if we can connect to the Pyth Entropy contract
@@ -34,7 +34,7 @@ async function testEntropyIntegration() {
     // Test basic contract methods
     try {
       const fee = await contract.getFeeV2(200000);
-      console.log(`✅ Fee for 200k gas: ${ethers.formatEther(fee)} ETH`);
+      console.log(`✅ Fee for 200k gas: ${ethers.formatEther(fee)} FLOW`);
     } catch (error) {
       console.error('❌ Failed to get fee:', error.message);
     }
@@ -51,7 +51,7 @@ async function testEntropyIntegration() {
     
     // Check wallet balance
     const balance = await provider.getBalance(wallet.address);
-    console.log(`💰 Wallet balance: ${ethers.formatEther(balance)} ETH`);
+    console.log(`💰 Wallet balance: ${ethers.formatEther(balance)} FLOW`);
     
     if (balance < ethers.parseEther("0.001")) {
       console.log('⚠️ Insufficient balance for testing');
@@ -65,7 +65,7 @@ async function testEntropyIntegration() {
     console.log('🧪 Testing entropy request...');
     const customGasLimit = 200000;
     const fee = await contractWithSigner.getFeeV2(customGasLimit);
-    console.log(`💰 Required fee: ${ethers.formatEther(fee)} ETH`);
+    console.log(`💰 Required fee: ${ethers.formatEther(fee)} FLOW`);
     
     // Make the request
     const tx = await contractWithSigner.requestV2(customGasLimit, {
@@ -74,8 +74,8 @@ async function testEntropyIntegration() {
     });
     
     console.log(`📤 Transaction sent: ${tx.hash}`);
-    console.log(`🔗 Arbiscan: https://sepolia.arbiscan.io/tx/${tx.hash}`);
-    console.log(`🔗 Entropy Explorer: https://entropy-explorer.pyth.network/?chain=arbitrum-sepolia&search=${tx.hash}`);
+    console.log(`🔗 Arbiscan: https://testnet.arbiscan.io/tx/${tx.hash}`);
+    console.log(`🔗 Entropy Explorer: https://entropy-explorer.pyth.network/?chain=flow-testnet&search=${tx.hash}`);
     
     // Wait for confirmation
     const receipt = await tx.wait();

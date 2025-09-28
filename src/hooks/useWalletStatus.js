@@ -7,7 +7,7 @@ import React, {
   useEffect,
   useCallback,
 } from 'react';
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { useFlowWallet } from './useFlowWallet';
 
 const WalletStatusContext = createContext(null);
 
@@ -18,11 +18,9 @@ export function WalletStatusProvider({ children }) {
   const { 
     address: account,
     isConnected: connected,
-    chain: network
-  } = useAccount();
-  
-  const { connect, connectors } = useConnect();
-  const { disconnect } = useDisconnect();
+    connect,
+    disconnect
+  } = useFlowWallet();
 
   const [devWallet, setDevWallet] = useState({
     isConnected: false,
@@ -39,8 +37,8 @@ export function WalletStatusProvider({ children }) {
     if (savedState === 'connected') {
       setDevWallet({
         isConnected: true,
-        address: '0x1234...dev',
-        chain: { id: 'arbitrum_testnet', name: 'Arbitrum Sepolia' },
+        address: '0x01cf0e2f2f715450',
+        chain: { id: 'flow_testnet', name: 'Flow Testnet' },
       });
     }
 
@@ -55,8 +53,8 @@ export function WalletStatusProvider({ children }) {
         return newState
           ? {
               isConnected: true,
-              address: '0x1234...dev',
-              chain: { id: 'arbitrum_testnet', name: 'Arbitrum Sepolia' },
+              address: '0x01cf0e2f2f715450',
+              chain: { id: 'flow_testnet', name: 'Flow Testnet' },
             }
           : {
               isConnected: false,
@@ -77,24 +75,19 @@ export function WalletStatusProvider({ children }) {
       localStorage.setItem('dev-wallet-state', 'connected');
       setDevWallet({
         isConnected: true,
-        address: '0x1234...dev',
-        chain: { id: 'arbitrum_testnet', name: 'Arbitrum Sepolia' },
+        address: '0x01cf0e2f2f715450',
+        chain: { id: 'flow_testnet', name: 'Flow Testnet' },
       });
       return;
     }
 
     try {
-      // MetaMask ile bağlan
-      const metaMaskConnector = connectors.find(connector => connector.id === 'metaMask');
-      if (metaMaskConnector) {
-        await connect({ connector: metaMaskConnector });
-      } else {
-        setError('MetaMask connector not found');
-      }
+      // Flow wallet ile bağlan
+      await connect();
     } catch (err) {
-      setError('Failed to connect to MetaMask: ' + err.message);
+      setError('Flow cüzdanına bağlanılamadı: ' + err.message);
     }
-  }, [connect, connectors, isDev]);
+  }, [connect, isDev]);
 
   const disconnectWallet = useCallback(async () => {
     if (isDev) {
@@ -110,7 +103,7 @@ export function WalletStatusProvider({ children }) {
     try {
       await disconnect();
     } catch (err) {
-      setError('Failed to disconnect wallet: ' + err.message);
+      setError('Flow cüzdanı bağlantısı kesilemedi: ' + err.message);
     }
   }, [disconnect, isDev]);
 
@@ -121,39 +114,33 @@ export function WalletStatusProvider({ children }) {
   const currentStatus = {
     isConnected: !!connected && !!account, // Only connected if we have both connected and address
     address: account, // account is already the address string
-    chain: network,
+    chain: { id: 'flow_testnet', name: 'Flow Testnet' }, // Flow network info
   };
 
   // Debug currentStatus calculation
-  console.log('🔍 currentStatus calculation:', {
+  console.log('🔍 Flow currentStatus calculation:', {
     connected,
     account,
     accountAddress: account, // account is already the address
-    network,
     finalIsConnected: !!connected && !!account
   });
 
   useEffect(() => {
-    console.log('🔌 Arbitrum Wallet connection changed:');
+    console.log('🔌 Flow Wallet connection changed:');
     console.log('=== CURRENT STATUS ===');
     console.log('Connected:', currentStatus.isConnected);
     console.log('Address:', currentStatus.address);
     console.log('Chain:', currentStatus.chain);
-    console.log('=== RAW WAGMI VALUES ===');
+    console.log('=== RAW FLOW VALUES ===');
     console.log('Raw connected:', connected);
     console.log('Raw account:', account);
-    console.log('Raw network:', network);
     console.log('=== ENVIRONMENT ===');
     console.log('Is Dev:', isDev);
     console.log('Dev Wallet:', devWallet);
     console.log('=== LOCAL STORAGE ===');
     console.log('Dev wallet state:', localStorage.getItem('dev-wallet-state'));
-    console.log('Wagmi storage:', localStorage.getItem('aptcasino.wallet'));
-    console.log('=== WINDOW ETHEREUM ===');
-    console.log('Window ethereum exists:', !!window.ethereum);
-    console.log('Window ethereum connected:', window.ethereum?.isConnected?.());
-    console.log('Window ethereum accounts:', window.ethereum?.selectedAddress);
-  }, [currentStatus, connected, account, network, isDev, devWallet]);
+    console.log('Flow storage:', localStorage.getItem('fcl:current_user'));
+  }, [currentStatus, connected, account, isDev, devWallet]);
 
   return (
     <WalletStatusContext.Provider

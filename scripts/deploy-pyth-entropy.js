@@ -10,8 +10,8 @@ async function main() {
 
   // Pyth Entropy contract addresses for different networks
   const PYTH_ENTROPY_ADDRESSES = {
-    'arbitrum-sepolia': '0x549ebba8036ab746611b4ffa1423eb0a4df61440', // Official Pyth Entropy contract
-    'arbitrum-one': '0x0000000000000000000000000000000000000000', // Will be updated when available
+    'flow-testnet': '0x549ebba8036ab746611b4ffa1423eb0a4df61440', // Official Pyth Entropy contract
+    'flow-one': '0x0000000000000000000000000000000000000000', // Will be updated when available
     'base': '0x0000000000000000000000000000000000000000', // Will be updated when available
     'blast': '0x0000000000000000000000000000000000000000', // Will be updated when available
   };

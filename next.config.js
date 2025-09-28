@@ -35,6 +35,15 @@ const nextConfig = {
       '@': require('path').resolve(__dirname, 'src'),
     };
     
+    // Add fallback for Node.js modules that might not be available in the browser
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      net: false,
+      tls: false,
+      crypto: false,
+    };
+    
     // Optimize chunking for better loading performance
     if (!isServer && !dev) {
       // Combine smaller chunks to reduce network requests

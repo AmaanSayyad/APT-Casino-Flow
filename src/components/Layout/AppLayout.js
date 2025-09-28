@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAccount } from 'wagmi';
+import { useFlowWallet } from '@/hooks/useFlowWallet';
 import WalletConnectionHandler from '../Wallet/WalletConnectionHandler';
 import { useVRFPregeneration } from '../../hooks/useVRFPregeneration';
 import VRFStatusModal from '../VRF/VRFStatusModal';
@@ -9,7 +9,7 @@ import VRFStatusModal from '../VRF/VRFStatusModal';
  * Wraps the entire app with wallet connection handling
  */
 const AppLayout = ({ children }) => {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected } = useFlowWallet();
   const {
     vrfStatus,
     totalVRF,
@@ -99,7 +99,7 @@ const AppLayout = ({ children }) => {
                 <span className="font-medium">Provably Fair Gaming</span>
               </div>
               <p className="text-sm">
-                All games use Pyth Entropy for verifiable randomness on Arbitrum Sepolia
+                All games use Pyth Entropy for verifiable randomness on Flow Testnet
               </p>
             </div>
           </div>

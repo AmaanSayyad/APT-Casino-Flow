@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "networks": {
+    "testnet": "access.devnet.nodes.onflow.org:9000",
+    "mainnet": "access.mainnet.nodes.onflow.org:9000"
+  },
+  "accounts": {
+    "treasury": {
+      "address": "YOUR_TREASURY_ADDRESS",
+      "key": {
+        "type": "hex",
+        "index": 0,
+        "signatureAlgorithm": "ECDSA_secp256k1",
+        "hashAlgorithm": "SHA2_256",
+        "privateKey": "$FLOW_TREASURY_PRIVATE_KEY"
+      }
+    }
+  },
+  "contracts": {},
+  "deployments": {}
+}

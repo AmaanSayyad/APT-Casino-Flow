@@ -2,7 +2,7 @@ import { ethers } from 'ethers';
 
 // Pyth Entropy V2 Contract Configuration
 const PYTH_ENTROPY_ADDRESS = '0x549ebba8036ab746611b4ffa1423eb0a4df61440';
-const ARBITRUM_SEPOLIA_RPC = 'https://sepolia-rollup.arbitrum.io/rpc';
+const ARBITRUM_SEPOLIA_RPC = 'https://testnet-rollup.flow.io/rpc';
 
 // Contract ABI for Pyth Entropy V2
 const PYTH_ENTROPY_ABI = [
@@ -31,7 +31,7 @@ export async function POST(request) {
     let fee;
     try {
       fee = await contract.getFeeV2(200000); // 200k gas limit
-      console.log('💰 Fee:', ethers.formatEther(fee), 'ETH');
+      console.log('💰 Fee:', ethers.formatEther(fee), 'FLOW');
     } catch (error) {
       console.warn('⚠️ Could not get fee, using default:', error.message);
       fee = ethers.parseEther('0.001'); // Default fee
@@ -107,9 +107,9 @@ export async function POST(request) {
       transactionHash: tx.hash,
       blockNumber: receipt.blockNumber.toString(),
       randomValue: randomValue,
-      network: 'arbitrum-sepolia',
-      explorerUrl: `https://entropy-explorer.pyth.network/?chain=arbitrum-sepolia&search=${requestId}`,
-      arbiscanUrl: `https://sepolia.arbiscan.io/tx/${tx.hash}`,
+      network: 'flow-testnet',
+      explorerUrl: `https://entropy-explorer.pyth.network/?chain=flow-testnet&search=${requestId}`,
+      arbiscanUrl: `https://testnet.arbiscan.io/tx/${tx.hash}`,
       timestamp: Date.now(),
       source: 'Pyth Entropy (Direct Contract)'
     };
@@ -137,9 +137,9 @@ export async function POST(request) {
         transactionHash: 'fallback_no_tx',
         blockNumber: null,
         randomValue: Math.floor(Math.random() * 1000000),
-        network: 'arbitrum-sepolia',
-        explorerUrl: 'https://entropy-explorer.pyth.network/?chain=arbitrum-sepolia',
-        arbiscanUrl: 'https://sepolia.arbiscan.io/',
+        network: 'flow-testnet',
+        explorerUrl: 'https://entropy-explorer.pyth.network/?chain=flow-testnet',
+        arbiscanUrl: 'https://testnet.arbiscan.io/',
         timestamp: Date.now(),
         source: 'Pyth Entropy (Fallback)'
       }

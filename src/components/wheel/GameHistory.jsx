@@ -19,15 +19,15 @@ const GameHistory = ({ gameHistory }) => {
   // Open Arbiscan link
   const openArbiscan = (hash) => {
     if (hash) {
-      const network = process.env.NEXT_PUBLIC_NETWORK || 'arbitrum-sepolia';
+      const network = process.env.NEXT_PUBLIC_NETWORK || 'flow-testnet';
       let explorerUrl;
       
-      if (network === 'arbitrum-sepolia') {
-        explorerUrl = `https://sepolia.arbiscan.io/tx/${hash}`;
-      } else if (network === 'arbitrum-one') {
+      if (network === 'flow-testnet') {
+        explorerUrl = `https://testnet.arbiscan.io/tx/${hash}`;
+      } else if (network === 'flow-one') {
         explorerUrl = `https://arbiscan.io/tx/${hash}`;
       } else {
-        explorerUrl = `https://sepolia.etherscan.io/tx/${hash}`;
+        explorerUrl = `https://testnet.etherscan.io/tx/${hash}`;
       }
       
       window.open(explorerUrl, '_blank');
