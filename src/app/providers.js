@@ -5,6 +5,7 @@ import { Provider } from 'react-redux';
 import { store } from '@/store';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NotificationProvider } from '@/components/NotificationSystem';
+import { WalletStatusProvider } from '@/hooks/useWalletStatus';
 import { ThemeProvider } from 'next-themes';
 import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -98,19 +99,21 @@ export default function Providers({ children }) {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-        <NotificationProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            enableSystem={false}
-            disableTransitionOnChange
-          >
-            <MuiThemeProvider theme={muiTheme}>
-              <CssBaseline />
-              {children}
-            </MuiThemeProvider>
-          </ThemeProvider>
-        </NotificationProvider>
+        <WalletStatusProvider>
+          <NotificationProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="dark"
+              enableSystem={false}
+              disableTransitionOnChange
+            >
+              <MuiThemeProvider theme={muiTheme}>
+                <CssBaseline />
+                {children}
+              </MuiThemeProvider>
+            </ThemeProvider>
+          </NotificationProvider>
+        </WalletStatusProvider>
       </QueryClientProvider>
     </Provider>
   );

@@ -45,7 +45,7 @@ const Game = ({ betSettings = {}, onGameStatusChange, onGameComplete }) => {
 
   // Game Settings
   const defaultSettings = {
-    betAmount: 0.001, // Default to 0.001 FLOW
+    betAmount: 100, // Default to 100 FLOW
     mines: 5,
     isAutoBetting: false,
     tilesToReveal: 5,

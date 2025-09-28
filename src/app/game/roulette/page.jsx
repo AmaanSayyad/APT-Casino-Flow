@@ -34,7 +34,8 @@ import RouletteHistory from './components/RouletteHistory';
 // Removed wagmi import - using Flow wallet instead
 import { useSelector, useDispatch } from 'react-redux';
 import { setBalance, setLoading, loadBalanceFromStorage } from '@/store/balanceSlice';
-import pythEntropyService from '@/services/PythEntropyService';
+// Flow VRF service imported below
+import { flowVRFService } from '@/services/FlowVRFService';
 import { useFlowWallet } from '@/hooks/useFlowWallet';
 
 // Flow client functions will be added here when needed
@@ -45,6 +46,16 @@ const CASINO_MODULE_ADDRESS = "0x12345678901234567890123456789012345678901234567
 const parseEthAmount = (amount) => {
   // Parse FLOW amount
   return parseFloat(amount);
+};
+
+// Format balance for display (show 0 instead of 0.00000)
+const formatBalance = (balance) => {
+  const num = parseFloat(balance || '0');
+  if (num === 0) return '0';
+  // If it's a whole number, show without decimals
+  if (num % 1 === 0) return num.toString();
+  // Otherwise show with up to 5 decimals, removing trailing zeros
+  return parseFloat(num.toFixed(5)).toString();
 };
 
 const CasinoGames = {
@@ -216,7 +227,7 @@ function GridInside({
       29: "25,26,28,29", // Middle-left corner
       32: "28,29,31,32", // Middle-left corner
       35: "31,32,33,35", // Middle-right corner
-      
+
       3: "2,3,0",        // Top-left corner
       6: "2,3,5,6",      // Top-left corner
       9: "5,6,8,9",      // Top-left corner
@@ -246,7 +257,7 @@ function GridInside({
       1: "0,1",      // Bottom-left split with 0
       2: "0,2",      // Middle-left split with 0
       3: "0,3",      // Top-left split with 0
-      
+
       4: "1,4",      // Bottom-left split
       7: "4,7",      // Bottom-left split
       10: "7,10",    // Bottom-left split
@@ -258,7 +269,7 @@ function GridInside({
       28: "25,28",   // Bottom-left split
       31: "28,31",   // Bottom-left split
       34: "31,34",   // Bottom-left split
-      
+
       5: "2,5",      // Middle-left split
       8: "5,8",      // Middle-left split
       11: "8,11",    // Middle-left split
@@ -270,7 +281,7 @@ function GridInside({
       29: "26,29",   // Middle-left split
       32: "29,32",   // Middle-left split
       35: "32,35",   // Middle-left split
-      
+
       6: "3,6",      // Top-left split
       9: "6,9",      // Top-left split
       12: "9,12",    // Top-left split
@@ -330,12 +341,12 @@ function GridInside({
         35: "34,35",   // Split 35: 34,35 - Changed from street to split
         36: "35,36"    // Split 36: 35,36 - Changed from street to split
       };
-      
+
       const splitNumbers = bottomSplitMap[insideNumber];
       if (splitNumbers) {
         return `Split ${splitNumbers.replace(',', '-')}`;
       }
-      
+
       // Fallback to old calculation if not in map
       const bottomNumber = insideNumber + 3;
       return `Split ${insideNumber}-${bottomNumber}`;
@@ -452,7 +463,7 @@ function GridInside({
                 29: "25,26,28,29", // Middle-left corner
                 32: "28,29,31,32", // Middle-left corner
                 35: "31,32,33,35", // Middle-right corner
-                
+
                 3: "2,3,0",        // Top-left corner
                 6: "2,3,5,6",      // Top-left corner
                 9: "5,6,8,9",      // Top-left corner
@@ -466,7 +477,7 @@ function GridInside({
                 33: "29,30,32,33", // Top-left corner
                 36: "32,33,35,36"  // Top-right corner
               };
-              
+
               // Only render corner bet area if this number has a corner definition
               if (cornerMap[insideNumber]) {
                 return (
@@ -863,7 +874,7 @@ const BettingStats = ({ history }) => {
     // Calculate profit/loss
     // payout field now contains the net result (positive for wins, negative for losses)
     const totalProfitLoss = history.reduce((sum, bet) => sum + bet.payout, 0);
-    
+
     // profitLoss is the actual net profit/loss from all bets
     const profitLoss = totalProfitLoss;
 
@@ -1009,8 +1020,8 @@ export default function GameRoulette() {
     // Calculate real statistics from betting history
     const gameStatistics = {
       totalBets: bettingHistory.length,
-      totalVolume: bettingHistory.reduce((sum, bet) => sum + parseFloat(bet.amount || 0), 0).toFixed(5),
-      maxWin: bettingHistory.length > 0 ? Math.max(...bettingHistory.map(bet => parseFloat(bet.payout || 0))).toFixed(5) : '0.00000'
+      totalVolume: formatBalance(bettingHistory.reduce((sum, bet) => sum + parseFloat(bet.amount || 0), 0)),
+      maxWin: bettingHistory.length > 0 ? formatBalance(Math.max(...bettingHistory.map(bet => parseFloat(bet.payout || 0)))) : '0'
     };
 
     return (
@@ -1161,7 +1172,7 @@ export default function GameRoulette() {
   };
 
   const [events, dispatchEvents] = useReducer(eventReducer, []);
-  const [bet, setBet] = useState(0);
+  const [bet, setBet] = useState(100);
   const [inside, dispatchInside] = useReducer(arrayReducer, new Array(148).fill(0));
   const [red, setRed] = useState(0);
   const [black, setBlack] = useState(0);
@@ -1198,7 +1209,7 @@ export default function GameRoulette() {
   const isWalletReady = isConnected && address;
   const [realBalance, setRealBalance] = useState('0');
   const { balance: mockBalance } = useToken(address); // Mock balance for compatibility
-  
+
   // Use Flow balance from Redux store
   const { userFlowBalance } = useSelector((state) => state.balance);
   const balance = userFlowBalance || '0';
@@ -1450,21 +1461,14 @@ export default function GameRoulette() {
       e.preventDefault();
       e.stopPropagation();
     }
-    
-    // Initialize Yellow Network for Roulette
-    if (!pythEntropyService.isInitialized) {
-      console.log('🔮 PYTH ENTROPY: Initializing Roulette game...');
-      
-      pythEntropyService.initialize().then(() => {
-        console.log('✅ PYTH ENTROPY: Roulette initialized');
-        console.log('🎮 Network:', pythEntropyService.network);
-      }).catch(error => {
-        console.error('❌ PYTH ENTROPY: Initialization failed:', error);
-      });
-    }
-      
-      // Yellow Network SDK handles randomness - no VRF availability check needed
-    
+
+    // Initialize Flow VRF for Roulette
+    console.log('🔮 FLOW VRF: Roulette game ready...');
+    console.log('✅ FLOW VRF: Using Flow blockchain randomness');
+    console.log('🎮 Network: Flow Testnet');
+
+    // Yellow Network SDK handles randomness - no VRF availability check needed
+
     if (isNaN(newVal)) {
       return;
     }
@@ -1606,8 +1610,8 @@ export default function GameRoulette() {
       return;
     }
 
-    if (total <= 0) {
-      alert("Please place a bet first");
+    if (total < 1) {
+      alert("Minimum bet amount is 1 FLOW");
       return;
     }
 
@@ -1616,7 +1620,7 @@ export default function GameRoulette() {
     const totalBetAmount = total;
 
     if (currentBalance < totalBetAmount) {
-      alert(`Insufficient balance. You have ${currentBalance.toFixed(5)} FLOW but need ${totalBetAmount.toFixed(5)} FLOW`);
+      alert(`Insufficient balance. You have ${formatBalance(currentBalance)} FLOW but need ${formatBalance(totalBetAmount)} FLOW`);
       return;
     }
 
@@ -1635,23 +1639,23 @@ export default function GameRoulette() {
 
       // Store original balance for calculation
       const originalBalance = parseFloat(userBalance || '0');
-      
+
       // Check if user has enough balance
       if (originalBalance < totalBetAmount) {
-        alert(`Insufficient balance. You have ${originalBalance.toFixed(5)} FLOW but need ${totalBetAmount.toFixed(5)} FLOW`);
+        alert(`Insufficient balance. You have ${formatBalance(originalBalance)} FLOW but need ${formatBalance(totalBetAmount)} FLOW`);
         setSubmitDisabled(false);
         setWheelSpinning(false);
         return;
       }
-      
+
       // Deduct bet amount immediately from balance
       const balanceAfterBet = originalBalance - totalBetAmount;
-      dispatch(setBalance(balanceAfterBet.toFixed(5)));
-      
+      dispatch(setBalance(formatBalance(balanceAfterBet)));
+
       console.log("Balance deducted:", {
-        originalBalance: originalBalance.toFixed(5),
-        betAmount: totalBetAmount.toFixed(5),
-        balanceAfterBet: balanceAfterBet.toFixed(5)
+        originalBalance: formatBalance(originalBalance),
+        betAmount: formatBalance(totalBetAmount),
+        balanceAfterBet: formatBalance(balanceAfterBet)
       });
 
       // Convert ALL bets into an array for multiple bet processing
@@ -1701,9 +1705,9 @@ export default function GameRoulette() {
           // Index 1-4: Number 1 (straight=1, split-left=2, split-bottom=3, corner=4)
           // Index 5-8: Number 2 (straight=5, split-left=6, split-bottom=7, corner=8)
           // Formula: (number-1)*4 + betType for numbers 1-36
-          
+
           let actualNumber, betPosition;
-          
+
           if (index === 0) {
             // Special case for number 0 - only straight bet
             actualNumber = 0;
@@ -1735,7 +1739,7 @@ export default function GameRoulette() {
               1: "0,1",      // Bottom-left split with 0
               2: "0,2",      // Middle-left split with 0
               3: "0,3",      // Top-left split with 0
-              
+
               4: "1,4",      // Bottom-left split
               7: "4,7",      // Bottom-left split
               10: "7,10",    // Bottom-left split
@@ -1747,7 +1751,7 @@ export default function GameRoulette() {
               28: "25,28",   // Bottom-left split
               31: "28,31",   // Bottom-left split
               34: "31,34",   // Bottom-left split
-              
+
               5: "2,5",      // Middle-left split
               8: "5,8",      // Middle-left split
               11: "8,11",    // Middle-left split
@@ -1759,7 +1763,7 @@ export default function GameRoulette() {
               29: "26,29",   // Middle-left split
               32: "29,32",   // Middle-left split
               35: "32,35",   // Middle-left split
-              
+
               6: "3,6",      // Top-left split
               9: "6,9",      // Top-left split
               12: "9,12",    // Top-left split
@@ -1772,7 +1776,7 @@ export default function GameRoulette() {
               33: "30,33",   // Top-left split
               36: "33,36"    // Top-left split
             };
-            
+
             const splitNumbers = splitMap[actualNumber];
             if (splitNumbers) {
               // Use the actualNumber (where bet was placed) to get split definition
@@ -1815,7 +1819,7 @@ export default function GameRoulette() {
                 35: "34,35",   // Split 35: 34,35 - Changed from street to split
                 36: "35,36"    // Split 36: 35,36 - Changed from street to split
               };
-              
+
               const splitNumbers = bottomSplitMap[actualNumber];
               if (splitNumbers) {
                 allBets.push({ type: BetType.SPLIT, value: splitNumbers, amount, name: `Split ${actualNumber} (${splitNumbers.replace(',', '-')})` });
@@ -1854,7 +1858,7 @@ export default function GameRoulette() {
               35: "34,35",   // Split 35: 34,35
               36: "35,36"    // Split 36: 35,36
             };
-            
+
             const horizontalSplitNumbers = horizontalSplitMap[actualNumber];
             if (horizontalSplitNumbers) {
               // Use the actualNumber (where bet was placed) to get split definition
@@ -1877,7 +1881,7 @@ export default function GameRoulette() {
               29: "25,26,28,29", // Middle-left corner
               32: "28,29,31,32", // Middle-left corner
               35: "31,32,33,35", // Middle-right corner
-              
+
               3: "2,3,0",      // Top-left corner
               6: "2,3,5,6",      // Top-left corner
               9: "5,6,8,9",     // Top-left corner
@@ -1965,7 +1969,7 @@ export default function GameRoulette() {
         // netResult should be just the winnings (totalPayout includes original bet)
         const netResult = totalPayout > 0 ? totalPayout : 0;
         setWinnings(netResult);
-        
+
         console.log("🎯 WINNINGS CALCULATION:", {
           totalPayout,
           totalBetAmount,
@@ -1988,14 +1992,14 @@ export default function GameRoulette() {
         // netResult = totalPayout (includes original bet since we already deducted it)
         // So we just add the total winnings to the balance after bet deduction
         const finalBalance = balanceAfterBet + netResult;
-        dispatch(setBalance(finalBalance.toFixed(5)));
+        dispatch(setBalance(formatBalance(finalBalance)));
 
         console.log("Balance update:", {
-          originalBalance: originalBalance.toFixed(5),
-          balanceAfterBet: balanceAfterBet.toFixed(5),
-          totalPayout: totalPayout.toFixed(5),
-          netResult: netResult.toFixed(5),
-          finalBalance: finalBalance.toFixed(5),
+          originalBalance: formatBalance(originalBalance),
+          balanceAfterBet: formatBalance(balanceAfterBet),
+          totalPayout: formatBalance(totalPayout),
+          netResult: formatBalance(netResult),
+          finalBalance: formatBalance(finalBalance),
           explanation: "netResult = totalPayout (includes original bet), so we add full winnings"
         });
 
@@ -2018,44 +2022,44 @@ export default function GameRoulette() {
           }
         };
 
-        // Generate random number using Pyth Entropy
-        pythEntropyService.generateRandom('ROULETTE', {
-          purpose: 'roulette_spin',
-          gameType: 'ROULETTE'
-        }).then(entropyResult => {
-          console.log('🔮 PYTH ENTROPY: Roulette randomness generated:', entropyResult);
-          
-          // Add Pyth Entropy proof info to the bet result
-          newBet.entropyProof = {
-            requestId: entropyResult.entropyProof.requestId,
-            sequenceNumber: entropyResult.entropyProof.sequenceNumber,
-            randomValue: entropyResult.randomValue,
-            transactionHash: entropyResult.entropyProof.transactionHash,
-            arbiscanUrl: entropyResult.entropyProof.arbiscanUrl,
-            explorerUrl: entropyResult.entropyProof.explorerUrl,
-            timestamp: entropyResult.entropyProof.timestamp,
-            source: 'Pyth Entropy'
+        // Generate random number using Flow VRF
+        flowVRFService.generateRouletteNumber(address, totalBetAmount, 'multiple').then(vrfResult => {
+          console.log('🎲 FLOW VRF: Roulette randomness generated:', vrfResult);
+
+          // Use the VRF result as the winning number
+          const winningNumber = vrfResult.rouletteNumber;
+          setRollResult(winningNumber);
+
+          // Add Flow VRF proof info to the bet result
+          newBet.flowVRF = {
+            transactionId: vrfResult.transactionId,
+            blockHeight: vrfResult.blockHeight,
+            randomNumber: vrfResult.randomNumber,
+            rouletteNumber: vrfResult.rouletteNumber,
+            color: vrfResult.color,
+            explorerUrl: vrfResult.explorerUrl,
+            timestamp: vrfResult.timestamp,
+            source: 'Flow VRF'
           };
-          
-          
-          // Update betting history with entropy proof
+
+          // Update betting history with Flow VRF proof
           setBettingHistory(prev => {
             const updatedHistory = [...prev];
             if (updatedHistory.length > 0) {
-              updatedHistory[0] = { ...updatedHistory[0], entropyProof: newBet.entropyProof };
+              updatedHistory[0] = { ...updatedHistory[0], flowVRF: newBet.flowVRF };
             }
             return updatedHistory;
           });
-          
+
           // Fire-and-forget explorer log via casino wallet
           try {
             fetch('/api/casino-session', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                sessionId: entropyResult.entropyProof.requestId || `roulette_${Date.now()}`,
+                sessionId: vrfResult.transactionId || `roulette_${Date.now()}`,
                 gameType: 'ROULETTE',
-                channelId: entropyResult.entropyProof.requestId || 'entropy_channel',
+                requestId: vrfResult.transactionId || 'flow_vrf_request',
                 valueEth: 0
               })
             })
@@ -2067,15 +2071,15 @@ export default function GameRoulette() {
           } catch (e) {
             console.warn('Casino session log threw (Roulette):', e);
           }
-          
-          // Pyth Entropy handles randomness generation
-          console.log('✅ Pyth Entropy randomness processed for Roulette');
+
+          // Flow VRF handles randomness generation
+          console.log('✅ Flow VRF randomness processed for Roulette');
         }).then(() => {
-          console.log('📊 PYTH ENTROPY: Roulette game completed successfully');
+          console.log('📊 FLOW VRF: Roulette game completed successfully');
         }).catch(error => {
-          console.error('❌ PYTH ENTROPY: Error processing Roulette game:', error);
-          // Still add the bet result even if Pyth Entropy processing fails
-          newBet.entropyProof = null;
+          console.error('❌ FLOW VRF: Error processing Roulette game:', error);
+          // Still add the bet result even if Flow VRF processing fails
+          newBet.vrfData = null;
         });
 
         console.log("newBet object created:", {
@@ -2094,16 +2098,16 @@ export default function GameRoulette() {
         // Show result notification
         if (netResult > 0) {
           const winMessage = winningBets.length === 1
-                    ? `🎉 WINNER! ${winningBets[0].name} - You won ${(netResult - totalBetAmount).toFixed(5)} FLOW!`
-                    : `🎉 MULTIPLE WINNERS! ${winningBets.length} bets won - Total: ${(netResult - totalBetAmount).toFixed(5)} FLOW!`;
+            ? `🎉 WINNER! ${winningBets[0].name} - You won ${formatBalance(netResult - totalBetAmount)} FLOW!`
+            : `🎉 MULTIPLE WINNERS! ${winningBets.length} bets won - Total: ${formatBalance(netResult - totalBetAmount)} FLOW!`;
 
           setNotificationMessage(winMessage);
           setNotificationSeverity("success");
           setSnackbarMessage(winMessage);
         } else {
-          setNotificationMessage(`💸 Number ${winningNumber} - You lost ${totalBetAmount.toFixed(5)} FLOW!`);
+          setNotificationMessage(`💸 Number ${winningNumber} - You lost ${formatBalance(totalBetAmount)} FLOW!`);
           setNotificationSeverity("error");
-          setSnackbarMessage(`💸 Number ${winningNumber} - You lost ${totalBetAmount.toFixed(5)} FLOW!`);
+          setSnackbarMessage(`💸 Number ${winningNumber} - You lost ${formatBalance(totalBetAmount)} FLOW!`);
         }
         setSnackbarOpen(true);
 
@@ -2614,7 +2618,7 @@ export default function GameRoulette() {
               }}
             >
               <FaCoins className="text-yellow-400" />
-              Balance: {isConnected ? `${parseFloat(userBalance || '0').toFixed(5)} FLOW` : 'Connect Wallet'}
+              Balance: {isConnected ? `${formatBalance(userBalance)} FLOW` : 'Connect Wallet'}
             </Typography>
           </Box>
 
@@ -3102,10 +3106,10 @@ export default function GameRoulette() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <Shield size={16} style={{ color: '#FFC107' }} />
                 <Typography variant="subtitle2" sx={{ color: '#FFC107', fontWeight: 'bold' }}>
-                  Pyth Entropy
+                  Flow VRF
                 </Typography>
               </Box>
-              
+
               {!isConnected ? (
                 <Box sx={{ textAlign: 'center', py: 1 }}>
                   <Button
@@ -3130,21 +3134,21 @@ export default function GameRoulette() {
                 </Box>
               ) : (
                 <Box>
-                  <Typography variant="h6" sx={{ 
+                  <Typography variant="h6" sx={{
                     color: '#10B981',
                     fontWeight: 'bold',
                     textAlign: 'center'
                   }}>
-                    Pyth Entropy
+                    Flow VRF
                   </Typography>
-                  
-                  <Typography variant="body2" sx={{ 
+
+                  <Typography variant="body2" sx={{
                     color: 'rgba(255,255,255,0.7)',
                     fontSize: '0.8rem',
                     textAlign: 'center',
                     mt: 1
                   }}>
-                    On-chain randomness
+                    Flow blockchain randomness
                   </Typography>
                 </Box>
               )}
@@ -3163,17 +3167,17 @@ export default function GameRoulette() {
                 variant="standard"
                 value={bet}
                 handleChange={handleBetChange}
-                step="0.001"
-                min="0.001"
+                step="1"
+                min="1"
               />
 
               <Typography color="white" sx={{ opacity: 0.8 }}>
-                Current Bet Total: {total.toFixed(5)} FLOW
+                Current Bet Total: {formatBalance(total)} FLOW
               </Typography>
 
               {/* Quick Bet Buttons */}
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
-                {[0.001, 0.01, 0.1, 1, 2, 5].map(amount => (
+                {[100, 250, 500, 750, 1000, 5000].map(amount => (
                   <Button
                     key={amount}
                     onClick={() => setBet(amount)}
@@ -3249,11 +3253,11 @@ export default function GameRoulette() {
                 ) : (
                   <Box sx={{ display: "flex", flexDirection: "column" }}>
                     <Button
-                      disabled={total === 0 || submitDisabled}
+                      disabled={total < 1 || submitDisabled}
                       loading={submitDisabled}
                       onClick={lockBet}
                     >
-                      {total > 0 ? `Place Bet (${total.toFixed(5)} FLOW)` : 'Place Bet (FLOW)'}
+                      {total > 0 ? `Place Bet (${formatBalance(total)} FLOW)` : 'Place Bet (FLOW)'}
                     </Button>
                     {submitDisabled && rollResult < 0 && (
                       <Typography color="white" sx={{ opacity: 0.8 }}>
@@ -3373,7 +3377,7 @@ export default function GameRoulette() {
           <Grid container spacing={4} sx={{ mb: 7 }}>
             {/* Video on left */}
             <Grid xs={12} md={6}>
-              
+
               <Box
                 sx={{
                   position: 'relative',
@@ -3496,7 +3500,7 @@ export default function GameRoulette() {
                     textShadow: '0 1px 2px rgba(0,0,0,0.3)',
                   }}
                 >
-                  European Roulette with a single zero and just no house edge - better odds than traditional casinos. Provably fair and powered by Aptos on-chain randomness module blockchain technology.
+                  European Roulette with a single zero and just no house edge - better odds than traditional casinos. Provably fair and powered by Flow VRF blockchain randomness technology.
                 </Typography>
 
                 <Typography
@@ -3597,8 +3601,8 @@ export default function GameRoulette() {
                 {winnings > 0
                   ? `🎉 You won ${winnings.toFixed(4)} FLOW!`
                   : winnings < 0
-                  ? `💸 You lost ${Math.abs(winnings).toFixed(4)} FLOW!`
-                  : "🤝 Break even!"}
+                    ? `💸 You lost ${Math.abs(winnings).toFixed(4)} FLOW!`
+                    : "🤝 Break even!"}
               </Typography>
             )}
           </MuiAlert>
@@ -3636,7 +3640,7 @@ export default function GameRoulette() {
           </MuiAlert>
         </Snackbar>
 
-        {/* Pyth Entropy handles randomness generation */}
+        {/* Flow VRF handles randomness generation */}
 
       </div>
     </ThemeProvider>

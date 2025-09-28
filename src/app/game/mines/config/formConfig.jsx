@@ -4,8 +4,8 @@ export const manualFormConfig = {
       id: "betAmount",
       label: "Bet Amount (FLOW)",
       type: "singleSelect",
-      options: [0.001, 0.01, 0.1, 1, 2, 5],
-      defaultValue: 0.001,
+      options: [100, 250, 500, 750, 1000, 2500],
+      defaultValue: 100,
       placeholder: "Select bet amount",
     },
     {
@@ -27,8 +27,8 @@ export const autoFormConfig = {
       id: "betAmount",
       label: "Bet Amount (FLOW)",
       type: "singleSelect",
-      options: [0.001, 0.01, 0.1, 1, 2, 5],
-      defaultValue: 0.001,
+      options: [100, 250, 500, 750, 1000, 2500],
+      defaultValue: 100,
       placeholder: "Select bet amount",
     },
     {

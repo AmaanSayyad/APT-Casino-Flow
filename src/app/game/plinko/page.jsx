@@ -13,14 +13,14 @@ import { motion } from "framer-motion";
 import { Typography } from "@mui/material";
 import { GiRollingDices, GiCardRandom, GiPokerHand } from "react-icons/gi";
 import { FaPercentage, FaBalanceScale, FaChartLine, FaCoins, FaTrophy, FaPlay, FaExternalLinkAlt } from "react-icons/fa";
-import pythEntropyService from '../../../services/PythEntropyService';
+import { flowVRFService } from '../../../services/FlowVRFService';
 
 export default function Plinko() {
   const userBalance = useSelector((state) => state.balance.userBalance);
   
   const [currentRows, setCurrentRows] = useState(15);
   const [currentRiskLevel, setCurrentRiskLevel] = useState("Medium");
-  const [currentBetAmount, setCurrentBetAmount] = useState(0);
+  const [currentBetAmount, setCurrentBetAmount] = useState(100);
   const [gameHistory, setGameHistory] = useState([]);
   const [showMobileWarning, setShowMobileWarning] = useState(false);
 
@@ -197,25 +197,28 @@ export default function Plinko() {
   const handleBetHistoryChange = async (newBetResult) => {
     console.log('🔍 handleBetHistoryChange called with:', newBetResult);
     
-    // Use Pyth Entropy for randomness
+    // Use Flow VRF for randomness
     try {
-      console.log('🎯 Using Pyth Entropy for Plinko randomness...');
-      const randomData = await pythEntropyService.generateRandom('PLINKO', {
+      console.log('🎯 Using Flow VRF for Plinko randomness...');
+      const vrfResult = await flowVRFService.requestRandomness('PLINKO', {
         purpose: 'plinko_ball_path',
-        gameType: 'PLINKO'
+        gameType: 'PLINKO',
+        betAmount: newBetResult.betAmount,
+        rows: currentRows,
+        riskLevel: currentRiskLevel
       });
-      console.log('🎲 Plinko game completed with Pyth Entropy randomness:', randomData);
+      console.log('🎲 Plinko game completed with Flow VRF randomness:', vrfResult);
       
-      // Add Pyth Entropy info to the bet result
+      // Add Flow VRF info to the bet result
       const enhancedBetResult = {
         ...newBetResult,
-        entropyProof: {
-          requestId: randomData.entropyProof?.requestId,
-          sequenceNumber: randomData.entropyProof?.sequenceNumber,
-          randomValue: randomData.randomValue,
-          transactionHash: randomData.entropyProof?.transactionHash,
-          timestamp: randomData.entropyProof?.timestamp
+        vrfData: {
+          requestId: vrfResult.requestId,
+          randomValue: vrfResult.randomValue,
+          blockHeight: vrfResult.blockHeight,
+          timestamp: vrfResult.timestamp
         },
+        transactionHash: vrfResult.transactionHash,
         timestamp: new Date().toISOString()
       };
       
@@ -223,9 +226,9 @@ export default function Plinko() {
       setGameHistory(prev => [enhancedBetResult, ...prev].slice(0, 100)); // Keep up to last 100 entries
       
     } catch (error) {
-      console.error('❌ Error using Yellow Network for Plinko game:', error);
+      console.error('❌ Error using Flow VRF for Plinko game:', error);
       
-      // Still add the bet result even if Yellow Network fails
+      // Still add the bet result even if Flow VRF fails
       setGameHistory(prev => [newBetResult, ...prev].slice(0, 100));
     }
   };

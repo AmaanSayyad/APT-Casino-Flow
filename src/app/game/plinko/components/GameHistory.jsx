@@ -5,31 +5,25 @@ import { FaExternalLinkAlt } from "react-icons/fa";
 export default function GameHistory({ history }) {
   const [visibleCount, setVisibleCount] = useState(5);
   
-  // Open Entropy Explorer link
-  const openEntropyExplorer = (txHash) => {
-    if (txHash) {
-      const entropyExplorerUrl = `https://entropy-explorer.pyth.network/?chain=flow-testnet&search=${txHash}`;
-      window.open(entropyExplorerUrl, '_blank');
-    }
-  };
-
-  // Open Arbiscan link for transaction hash
-  const openArbiscan = (hash) => {
-    if (hash && hash !== 'unknown') {
+  // Open Flow Explorer link for transaction hash
+  const openFlowExplorer = (txHash) => {
+    if (txHash && txHash !== 'unknown') {
       const network = process.env.NEXT_PUBLIC_NETWORK || 'flow-testnet';
       let explorerUrl;
       
       if (network === 'flow-testnet') {
-        explorerUrl = `https://testnet.arbiscan.io/tx/${hash}`;
-      } else if (network === 'flow-one') {
-        explorerUrl = `https://arbiscan.io/tx/${hash}`;
+        explorerUrl = `https://testnet.flowscan.org/transaction/${txHash}`;
+      } else if (network === 'flow-mainnet') {
+        explorerUrl = `https://flowscan.org/transaction/${txHash}`;
       } else {
-        explorerUrl = `https://testnet.etherscan.io/tx/${hash}`;
+        explorerUrl = `https://testnet.flowscan.org/transaction/${txHash}`;
       }
       
       window.open(explorerUrl, '_blank');
     }
   };
+
+
   
   return (
     <div>
@@ -67,7 +61,7 @@ export default function GameHistory({ history }) {
                 Payout
               </th>
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">
-                Entropy Explorer
+                Flow Explorer
               </th>
             </tr>
           </thead>
@@ -102,48 +96,41 @@ export default function GameHistory({ history }) {
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex flex-col gap-1">
-                    {game.entropyProof ? (
+                    {game.vrfData ? (
                       <>
                         <div className="text-xs text-gray-300 font-mono">
-                          <div className="text-yellow-400 font-bold">{game.entropyProof.sequenceNumber && game.entropyProof.sequenceNumber !== '0' ? String(game.entropyProof.sequenceNumber) : ''}</div>
+                          <div className="text-green-400 font-bold">
+                            {game.vrfData.requestId ? `Request: ${game.vrfData.requestId.slice(0, 8)}...` : ''}
+                          </div>
+                          {game.vrfData.randomValue && (
+                            <div className="text-blue-400">
+                              Random: {game.vrfData.randomValue.slice(0, 8)}...
+                            </div>
+                          )}
                         </div>
                         <div className="flex gap-1">
-                          {game.entropyProof.arbiscanUrl && (
+                          {game.transactionHash && (
                             <button
-                              onClick={() => window.open(game.entropyProof.arbiscanUrl, '_blank')}
-                              className="flex items-center gap-1 px-2 py-1 bg-blue-500/10 border border-blue-500/30 rounded text-blue-400 text-xs hover:bg-blue-500/20 transition-colors"
+                              onClick={() => openFlowExplorer(game.transactionHash)}
+                              className="flex items-center gap-1 px-2 py-1 bg-green-500/10 border border-green-500/30 rounded text-green-400 text-xs hover:bg-green-500/20 transition-colors"
                             >
                               <FaExternalLinkAlt size={8} />
-                              Arbiscan
-                            </button>
-                          )}
-                          {game.entropyProof.transactionHash && (
-                            <button
-                              onClick={() => openEntropyExplorer(game.entropyProof.transactionHash)}
-                              className="flex items-center gap-1 px-2 py-1 bg-[#681DDB]/10 border border-[#681DDB]/30 rounded text-[#681DDB] text-xs hover:bg-[#681DDB]/20 transition-colors"
-                            >
-                              <FaExternalLinkAlt size={8} />
-                              Entropy
+                              Flow Tx
                             </button>
                           )}
                         </div>
                       </>
                     ) : (
                       <div className="flex gap-1">
-                        <button
-                          onClick={() => openArbiscan(game.id)}
-                          className="flex items-center gap-1 px-2 py-1 bg-blue-500/10 border border-blue-500/30 rounded text-blue-400 text-xs hover:bg-blue-500/20 transition-colors"
-                        >
-                          <FaExternalLinkAlt size={8} />
-                          Arbiscan
-                        </button>
-                        <button
-                          onClick={() => openEntropyExplorer(game.id)}
-                          className="flex items-center gap-1 px-2 py-1 bg-[#681DDB]/10 border border-[#681DDB]/30 rounded text-[#681DDB] text-xs hover:bg-[#681DDB]/20 transition-colors"
-                        >
-                          <FaExternalLinkAlt size={8} />
-                          Entropy
-                        </button>
+                        {game.transactionHash && (
+                          <button
+                            onClick={() => openFlowExplorer(game.transactionHash)}
+                            className="flex items-center gap-1 px-2 py-1 bg-green-500/10 border border-green-500/30 rounded text-green-400 text-xs hover:bg-green-500/20 transition-colors"
+                          >
+                            <FaExternalLinkAlt size={8} />
+                            Flow Tx
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>

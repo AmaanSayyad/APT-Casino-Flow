@@ -24,7 +24,8 @@ import "./mines.css";
 import GameDetail from "@/components/GameDetail";
 import AIAutoBetting from "./components/AIAutoBetting";
 import AISettingsModal from "./components/AISettingsModal";
-import pythEntropyService from '@/services/PythEntropyService';
+// Flow VRF service imported below
+import { flowVRFService } from '@/services/FlowVRFService';
 
 export default function Mines() {
   // Game State
@@ -111,21 +112,17 @@ export default function Mines() {
   // Handle form submission
   const handleFormSubmit = async (formData) => {
     try {
-      console.log('🔮 PYTH ENTROPY: Initializing Mines game session...');
-      console.log('🔗 Network: Flow Testnet | Token: FLOW | Protocol: Pyth Entropy');
+      console.log('🔮 FLOW VRF: Initializing Mines game session...');
+      console.log('🔗 Network: Flow Testnet | Token: FLOW | Protocol: Flow VRF');
       
-      // Initialize Pyth Entropy
-      console.log('🔮 PYTH ENTROPY: Initializing...');
-      await pythEntropyService.initialize();
-      console.log('✅ PYTH ENTROPY: Initialized successfully');
-      
-      console.log('✅ PYTH ENTROPY: Mines game session created successfully');
-      console.log(`🎮 Game Config: ${formData.mines || 3} mines | ${formData.betAmount || '0.01'} FLOW bet`);
+      // Flow VRF is ready
+      console.log('✅ FLOW VRF: Ready for Mines game');
+      console.log(`🎮 Game Config: ${formData.mines || 3} mines | ${formData.betAmount || 100} FLOW bet`);
       
     } catch (error) {
-      console.error('❌ PYTH ENTROPY: Connection failed:', error);
-      console.warn('⚠️  Falling back to demo mode without Pyth Entropy');
-      alert('❌ Pyth Entropy connection failed. Running in demo mode.');
+      console.error('❌ FLOW VRF: Connection failed:', error);
+      console.warn('⚠️  Falling back to demo mode without Flow VRF');
+      alert('❌ Flow VRF connection failed. Running in demo mode.');
     }
     
     console.log('Form submitted with data:', formData);
@@ -195,34 +192,35 @@ export default function Mines() {
     // Generate Pyth Entropy for Mines game
     let entropyProof = null;
     try {
-      console.log('🔮 PYTH ENTROPY: Generating randomness for Mines game...');
-      const entropyResult = await pythEntropyService.generateRandom('MINES', {
+      console.log('🔮 FLOW VRF: Generating randomness for Mines game...');
+      const vrfResult = await flowVRFService.requestRandomness('MINES', {
         purpose: 'mines_game_result',
         gameType: 'MINES',
-        mines: result.mines || 0,
-        won: result.won || false
+        betAmount: result.betAmount,
+        mineCount: result.mines || 0,
+        revealedTiles: result.revealedTiles || [],
+        cashOut: result.won || false
       });
       
       entropyProof = {
-        requestId: entropyResult.entropyProof?.requestId,
-        sequenceNumber: entropyResult.entropyProof?.sequenceNumber,
-        randomValue: entropyResult.randomValue,
-        transactionHash: entropyResult.entropyProof?.transactionHash,
-        arbiscanUrl: entropyResult.entropyProof?.arbiscanUrl,
-        explorerUrl: entropyResult.entropyProof?.explorerUrl,
-        timestamp: entropyResult.entropyProof?.timestamp,
-        source: 'Pyth Entropy'
+        requestId: vrfResult.requestId,
+        randomValue: vrfResult.randomValue,
+        transactionHash: vrfResult.transactionHash,
+        blockHeight: vrfResult.blockHeight,
+        explorerUrl: `https://testnet.flowscan.org/transaction/${vrfResult.transactionHash}`,
+        timestamp: vrfResult.timestamp,
+        source: 'Flow VRF'
       };
       
-      console.log('✅ PYTH ENTROPY: Mines randomness generated:', entropyProof);
+      console.log('✅ FLOW VRF: Mines randomness generated:', entropyProof);
     } catch (error) {
-      console.error('❌ Error using Pyth Entropy for Mines game:', error);
+      console.error('❌ Error using Flow VRF for Mines game:', error);
     }
     
     const newHistoryItem = {
       id: Date.now(),
       mines: result.mines || 0,
-      bet: `${result.betAmount || '0.00000'} FLOW`,
+      bet: `${result.betAmount || '0'} FLOW`,
       outcome: result.won ? 'win' : 'loss',
       payout: result.won ? `${result.payout || '0.00000'} FLOW` : '0.00000 FLOW',
       multiplier: result.won ? `${result.multiplier || '0.00'}x` : '0.00x',

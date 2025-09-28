@@ -4,7 +4,7 @@ import { Box, Typography, Paper, Tabs, Tab, Table, TableBody, TableCell, TableCo
 import { FaHistory, FaChartLine, FaFire, FaExclamationCircle, FaCoins, FaInfoCircle, FaTrophy, FaDice, FaExternalLinkAlt } from 'react-icons/fa';
 
 // Utility function to format FLOW amounts with proper decimal precision
-const formatETHAmount = (amount) => {
+const formatFLOWAmount = (amount) => {
   if (typeof amount !== 'number') {
     amount = parseFloat(amount) || 0;
   }
@@ -22,10 +22,11 @@ const sampleBets = [
     result: 23, 
     win: true, 
     payout: 20,
-    vrfProof: {
-      requestId: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-      transactionHash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
-      logIndex: 42
+    flowVRF: {
+      transactionId: 'a1b2c3d4e5f6789012345678901234567890123456789012345678901234567890',
+      blockHeight: '282137162',
+      explorerUrl: 'https://testnet.flowscan.io/tx/a1b2c3d4e5f6789012345678901234567890123456789012345678901234567890',
+      randomSeed: 1234567890
     },
     details: {
       winningBets: ['Red: 5 × 2.0x', 'Odd: 3 × 2.0x'],
@@ -40,10 +41,11 @@ const sampleBets = [
     result: 16, 
     win: true, 
     payout: 30,
-    vrfProof: {
-      requestId: '0x2345678901bcdef12345678901bcdef12345678901bcdef12345678901bcdef',
-      transactionHash: '0xbcdef12345678901bcdef12345678901bcdef12345678901bcdef12345678901',
-      logIndex: 15
+    flowVRF: {
+      transactionId: 'b2c3d4e5f6789012345678901234567890123456789012345678901234567890ab',
+      blockHeight: '282137150',
+      explorerUrl: 'https://testnet.flowscan.io/tx/b2c3d4e5f6789012345678901234567890123456789012345678901234567890ab',
+      randomSeed: 9876543210
     },
     details: {
       winningBets: ['Even: 10 × 2.0x', 'Low (1-18): 5 × 2.0x'],
@@ -58,6 +60,12 @@ const sampleBets = [
     result: 15, 
     win: false, 
     payout: 0,
+    flowVRF: {
+      transactionId: 'c3d4e5f6789012345678901234567890123456789012345678901234567890abcd',
+      blockHeight: '282137140',
+      explorerUrl: 'https://testnet.flowscan.io/tx/c3d4e5f6789012345678901234567890123456789012345678901234567890abcd',
+      randomSeed: 5555666677
+    },
     details: {
       winningBets: [],
       losingBets: ['Black: -15', 'High (19-36): -5']
@@ -71,6 +79,12 @@ const sampleBets = [
     result: 17, 
     win: true, 
     payout: 175,
+    flowVRF: {
+      transactionId: 'd4e5f6789012345678901234567890123456789012345678901234567890abcdef',
+      blockHeight: '282137130',
+      explorerUrl: 'https://testnet.flowscan.io/tx/d4e5f6789012345678901234567890123456789012345678901234567890abcdef',
+      randomSeed: 1111222233
+    },
     details: {
       winningBets: ['Number 17: 5 × 35.0x'],
       losingBets: []
@@ -250,29 +264,19 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
     return redNumbers.includes(num) ? '#d82633' : '#333'; // Red or black
   };
 
-  // Open Arbiscan link for transaction hash
-  const openArbiscan = (hash) => {
-    if (hash && hash !== 'unknown') {
-      const network = process.env.NEXT_PUBLIC_NETWORK || 'flow-testnet';
-      let explorerUrl;
-      
-      if (network === 'flow-testnet') {
-        explorerUrl = `https://testnet.arbiscan.io/tx/${hash}`;
-      } else if (network === 'flow-one') {
-        explorerUrl = `https://arbiscan.io/tx/${hash}`;
-      } else {
-        explorerUrl = `https://testnet.etherscan.io/tx/${hash}`;
-      }
-      
+  // Open Flow Testnet Scanner link for transaction
+  const openFlowScan = (transactionId) => {
+    if (transactionId && transactionId !== 'unknown') {
+      const explorerUrl = `https://testnet.flowscan.io/tx/${transactionId}`;
       window.open(explorerUrl, '_blank');
     }
   };
 
-  // Open Entropy Explorer link
-  const openEntropyExplorer = (txHash) => {
+  // Open Flow VRF Explorer link
+  const openVRFExplorer = (txHash) => {
     if (txHash) {
-      const entropyExplorerUrl = `https://entropy-explorer.pyth.network/?chain=flow-testnet&search=${txHash}`;
-      window.open(entropyExplorerUrl, '_blank');
+      const flowExplorerUrl = `https://testnet.flowscan.org/transaction/${txHash}`;
+      window.open(flowExplorerUrl, '_blank');
     }
   };
   
@@ -385,7 +389,7 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
                       <TableCell align="center">Amount</TableCell>
                       <TableCell align="center">Result</TableCell>
                       <TableCell align="right">Payout</TableCell>
-                      <TableCell align="center">Entropy Explorer</TableCell>
+                      <TableCell align="center">Flow VRF</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -486,7 +490,7 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
                             )}
                           </Box>
                         </TableCell>
-                        <TableCell align="center">{formatETHAmount(bet.amount || bet.totalBetAmount || 0)} FLOW</TableCell>
+                        <TableCell align="center">{formatFLOWAmount(bet.amount || bet.totalBetAmount || 0)} FLOW</TableCell>
                         <TableCell align="center">
                           <Box 
                             sx={{ 
@@ -522,23 +526,23 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
                             {bet.win ? (
                               <>
                                 <FaCoins size={12} color="#14D854" />
-                                +{formatETHAmount(bet.payout || bet.netResult || 0)} FLOW
+                                +{formatFLOWAmount(bet.payout || bet.netResult || 0)} FLOW
                               </>
                             ) : '-'}
                           </Typography>
                         </TableCell>
                         <TableCell align="center">
-                          {bet.entropyProof ? (
+                          {bet.flowVRF ? (
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: 'center' }}>
                               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, alignItems: 'center' }}>
-                                <Typography variant="caption" sx={{ color: '#FFC107', fontFamily: 'monospace', fontWeight: 'bold' }}>
-                                  {bet.entropyProof.sequenceNumber && bet.entropyProof.sequenceNumber !== '0' ? String(bet.entropyProof.sequenceNumber) : ''}
+                                <Typography variant="caption" sx={{ color: '#00D4AA', fontFamily: 'monospace', fontWeight: 'bold' }}>
+                                  {bet.flowVRF.transactionId ? bet.flowVRF.transactionId.slice(0, 8) + '...' : ''}
                                 </Typography>
                               </Box>
                               <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                {bet.entropyProof.arbiscanUrl && (
+                                {bet.flowVRF.transactionId && (
                                   <Box
-                                    onClick={() => window.open(bet.entropyProof.arbiscanUrl, '_blank')}
+                                    onClick={() => openVRFExplorer(bet.flowVRF.transactionId)}
                                     sx={{
                                       display: 'flex',
                                       alignItems: 'center',
@@ -546,43 +550,18 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
                                       cursor: 'pointer',
                                       padding: '2px 6px',
                                       borderRadius: '4px',
-                                      backgroundColor: 'rgba(0, 150, 255, 0.1)',
-                                      border: '1px solid rgba(0, 150, 255, 0.3)',
+                                      backgroundColor: 'rgba(0, 212, 170, 0.1)',
+                                      border: '1px solid rgba(0, 212, 170, 0.3)',
                                       transition: 'all 0.2s ease',
                                       '&:hover': {
-                                        backgroundColor: 'rgba(0, 150, 255, 0.2)',
+                                        backgroundColor: 'rgba(0, 212, 170, 0.2)',
                                         transform: 'scale(1.05)'
                                       }
                                     }}
                                   >
-                                    <FaExternalLinkAlt size={10} color="#0096FF" />
-                                    <Typography variant="caption" sx={{ color: '#0096FF', fontSize: '0.7rem', fontWeight: 'bold' }}>
-                                      Arbiscan
-                                    </Typography>
-                                  </Box>
-                                )}
-                                {bet.entropyProof.explorerUrl && (
-                                  <Box
-                                    onClick={() => window.open(bet.entropyProof.explorerUrl, '_blank')}
-                                    sx={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: 0.5,
-                                      cursor: 'pointer',
-                                      padding: '2px 6px',
-                                      borderRadius: '4px',
-                                      backgroundColor: 'rgba(104, 29, 219, 0.1)',
-                                      border: '1px solid rgba(104, 29, 219, 0.3)',
-                                      transition: 'all 0.2s ease',
-                                      '&:hover': {
-                                        backgroundColor: 'rgba(104, 29, 219, 0.2)',
-                                        transform: 'scale(1.05)'
-                                      }
-                                    }}
-                                  >
-                                    <FaExternalLinkAlt size={10} color="#681DDB" />
-                                    <Typography variant="caption" sx={{ color: '#681DDB', fontSize: '0.7rem', fontWeight: 'bold' }}>
-                                      Entropy
+                                    <FaExternalLinkAlt size={10} color="#00D4AA" />
+                                    <Typography variant="caption" sx={{ color: '#00D4AA', fontSize: '0.7rem', fontWeight: 'bold' }}>
+                                      Flow Tx
                                     </Typography>
                                   </Box>
                                 )}

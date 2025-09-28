@@ -42,14 +42,25 @@ export const FLOW_CONTRACTS = {
 
 // Flow Treasury Configuration
 export const FLOW_TREASURY_CONFIG = {
-  ADDRESS: process.env.NEXT_PUBLIC_FLOW_TREASURY_ADDRESS || "0x038360087beccc9a", // Generated treasury address
+  ADDRESS: process.env.NEXT_PUBLIC_FLOW_TREASURY_ADDRESS || "0x2083a55fb16f8f60",
   GAS: {
     DEPOSIT_LIMIT: 1000,
     WITHDRAW_LIMIT: 1000,
   },
-  MIN_DEPOSIT: 0.001, // Minimum deposit amount in FLOW
-  MIN_WITHDRAW: 0.001, // Minimum withdrawal amount in FLOW
-  MAX_WITHDRAW: 1000, // Maximum withdrawal amount in FLOW per transaction
+  MIN_DEPOSIT: parseFloat(process.env.NEXT_PUBLIC_FLOW_MIN_BET) || 0.001,
+  MIN_WITHDRAW: 0.001,
+  MAX_WITHDRAW: parseFloat(process.env.NEXT_PUBLIC_FLOW_MAX_BET) || 1000,
+};
+
+// Flow Casino Contract Configuration
+export const FLOW_CASINO_CONFIG = {
+  CONTRACT_ADDRESS: process.env.NEXT_PUBLIC_FLOW_CASINO_CONTRACT_ADDRESS || "0x2083a55fb16f8f60",
+  CONTRACT_NAME: process.env.NEXT_PUBLIC_FLOW_CASINO_CONTRACT_NAME || "CasinoGames",
+  DEPLOYMENT_TX: process.env.FLOW_CASINO_DEPLOYMENT_TX || "6366c5753e26e39258ecd1581f0696a8688bab85b8bebe968ed06fdc8584f23a",
+  MIN_BET: parseFloat(process.env.NEXT_PUBLIC_FLOW_MIN_BET) || 0.001,
+  MAX_BET: parseFloat(process.env.NEXT_PUBLIC_FLOW_MAX_BET) || 1000,
+  HOUSE_EDGE: parseFloat(process.env.NEXT_PUBLIC_FLOW_HOUSE_EDGE) || 0.02,
+  VRF_ENABLED: process.env.NEXT_PUBLIC_FLOW_VRF_ENABLED === 'true',
 };
 
 // Flow Testnet Network Info

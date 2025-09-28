@@ -9,31 +9,41 @@ import { FaExternalLinkAlt } from "react-icons/fa";
 const GameHistory = ({ gameHistory }) => {
   const [activeTab, setActiveTab] = useState("my-bet");
   const [entriesShown, setEntriesShown] = useState(10);
-  
+
+  // Format balance for display (show 0 instead of 0.00000)
+  const formatBalance = (balance) => {
+    const num = parseFloat(balance || '0');
+    if (num === 0) return '0';
+    // If it's a whole number, show without decimals
+    if (num % 1 === 0) return num.toString();
+    // Otherwise show with up to 5 decimals, removing trailing zeros
+    return parseFloat(num.toFixed(5)).toString();
+  };
+
   // Format transaction hash for display
   const formatTxHash = (hash) => {
     if (!hash) return 'N/A';
     return `${hash.slice(0, 6)}...${hash.slice(-4)}`;
   };
-  
-  // Open Arbiscan link
-  const openArbiscan = (hash) => {
+
+  // Open Flow Explorer link
+  const openFlowExplorer = (hash) => {
     if (hash) {
       const network = process.env.NEXT_PUBLIC_NETWORK || 'flow-testnet';
       let explorerUrl;
-      
+
       if (network === 'flow-testnet') {
-        explorerUrl = `https://testnet.arbiscan.io/tx/${hash}`;
-      } else if (network === 'flow-one') {
-        explorerUrl = `https://arbiscan.io/tx/${hash}`;
+        explorerUrl = `https://testnet.flowscan.org/transaction/${hash}`;
+      } else if (network === 'flow-mainnet') {
+        explorerUrl = `https://flowscan.org/transaction/${hash}`;
       } else {
-        explorerUrl = `https://testnet.etherscan.io/tx/${hash}`;
+        explorerUrl = `https://testnet.flowscan.org/transaction/${hash}`;
       }
-      
+
       window.open(explorerUrl, '_blank');
     }
   };
-  
+
   return (
     <div className="bg-[#070005] w-full rounded-xl overflow-hidden mt-0">
       <div className="flex flex-row justify-between items-center">
@@ -65,7 +75,7 @@ const GameHistory = ({ gameHistory }) => {
 
         <div className="flex gradient-border mb-5 md:mb-0">
           <div className="flex space-x-4">
-            <select 
+            <select
               className="bg-[#120521] text-white text-md p-3 px-2 md:px-6 rounded border border-purple-900/30"
               value={entriesShown}
               onChange={(e) => setEntriesShown(Number(e.target.value))}
@@ -79,7 +89,7 @@ const GameHistory = ({ gameHistory }) => {
 
       </div>
 
-      
+
       {activeTab === "my-bet" && (
         <div className="overflow-x-auto">
           <table className="w-full mt-4 text-md">
@@ -90,7 +100,7 @@ const GameHistory = ({ gameHistory }) => {
                 <th className="py-6 px-4 font-medium">Bet amount</th>
                 <th className="py-6 px-4 font-medium">Multiplier</th>
                 <th className="py-6 px-4 font-medium">Payout</th>
-                <th className="py-6 px-4 font-medium">Pyth Entropy</th>
+                <th className="py-6 px-4 font-medium">Flow VRF</th>
               </tr>
             </thead>
             <tbody>
@@ -104,50 +114,48 @@ const GameHistory = ({ gameHistory }) => {
                     <td className="py-6 px-4">{item.time}</td>
                     <td className="py-6 px-4">
                       <span className="flex items-center">
-                        {item.betAmount.toFixed(10)}
+                        {formatBalance(item.betAmount)}
                         <Image
                           src="/coin.png"
                           width={20}
                           height={20}
                           alt="coin"
                           className=""
-                        />  
+                        />
                       </span>
                     </td>
                     <td className="py-6 px-4">{item.multiplier}</td>
                     <td className="py-6 px-4">
                       <span className="flex items-center">
-                        {item.payout.toFixed(10)}
+                        {formatBalance(item.payout)}
                         <Image
                           src="/coin.png"
                           width={20}
                           height={20}
                           alt="coin"
                           className=""
-                        />  
+                        />
                       </span>
                     </td>
                     <td className="py-6 px-4">
-                      {item.entropyProof ? (
+                      {item.vrfData ? (
                         <div className="text-xs text-gray-300 font-mono">
-                          <div className="text-yellow-400 font-bold">{item.entropyProof.sequenceNumber && item.entropyProof.sequenceNumber !== '0' ? String(item.entropyProof.sequenceNumber) : ''}</div>
+                          <div className="text-green-400 font-bold">
+                            {item.vrfData.requestId ? `Request: ${item.vrfData.requestId.slice(0, 8)}...` : ''}
+                          </div>
+                          {item.vrfData.randomValue && (
+                            <div className="text-blue-400">
+                              Random: {item.vrfData.randomValue.slice(0, 8)}...
+                            </div>
+                          )}
                           <div className="flex gap-1 mt-1">
-                            {item.entropyProof.arbiscanUrl && (
+                            {item.vrfData.transactionHash && (
                               <button
-                                onClick={() => window.open(item.entropyProof.arbiscanUrl, '_blank')}
-                                className="flex items-center gap-1 px-2 py-1 bg-blue-500/10 border border-blue-500/30 rounded text-blue-400 text-xs hover:bg-blue-500/20 transition-colors"
+                                onClick={() => openFlowExplorer(item.vrfData.transactionHash)}
+                                className="flex items-center gap-1 px-2 py-1 bg-green-500/10 border border-green-500/30 rounded text-green-400 text-xs hover:bg-green-500/20 transition-colors"
                               >
                                 <FaExternalLinkAlt size={8} />
-                                Arbiscan
-                              </button>
-                            )}
-                            {item.entropyProof.transactionHash && (
-                              <button
-                                onClick={() => window.open(`https://entropy-explorer.pyth.network/tx/${item.entropyProof.transactionHash}`, '_blank')}
-                                className="flex items-center gap-1 px-2 py-1 bg-[#681DDB]/10 border border-[#681DDB]/30 rounded text-[#681DDB] text-xs hover:bg-[#681DDB]/20 transition-colors"
-                              >
-                                <FaExternalLinkAlt size={8} />
-                                Entropy
+                                Flow Tx
                               </button>
                             )}
                           </div>
@@ -172,12 +180,12 @@ const GameHistory = ({ gameHistory }) => {
           </table>
         </div>
       )}
-      
+
       {activeTab === "game-description" && (
         <div className="p-4 text-sm text-gray-300">
           <h3 className="font-medium mb-2">Crazy Times</h3>
           <p>
-            Crazy Times is an exciting game of chance where you place bets on a spinning wheel. 
+            Crazy Times is an exciting game of chance where you place bets on a spinning wheel.
             Select your bet amount, risk level, and the number of segments on the wheel.
             The wheel will spin and land on a multiplier, which determines your payout.
             Higher risk levels can lead to higher multipliers but may be less likely to hit.

@@ -3,13 +3,23 @@ import { useState, forwardRef, useImperativeHandle, useCallback, useEffect, useR
 import Matter from 'matter-js';
 import { useSelector, useDispatch } from 'react-redux';
 import { setBalance, addToBalance, subtractFromBalance } from '@/store/balanceSlice';
-import pythEntropyService from '@/services/PythEntropyService';
+import { flowVRFService } from '@/services/FlowVRFService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaPlay, FaPause, FaRedo, FaCog, FaInfoCircle } from 'react-icons/fa';
 
 const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChange, betAmount = 0, onBetHistoryChange }, ref) => {
   const dispatch = useDispatch();
   const userBalance = useSelector((state) => state.balance.userBalance);
+  
+  // Format balance for display (show 0 instead of 0.00000)
+  const formatBalance = (balance) => {
+    const num = parseFloat(balance || '0');
+    if (num === 0) return '0';
+    // If it's a whole number, show without decimals
+    if (num % 1 === 0) return num.toString();
+    // Otherwise show with up to 5 decimals, removing trailing zeros
+    return parseFloat(num.toFixed(5)).toString();
+  };
   
   const [isDropping, setIsDropping] = useState(false);
   const [ballPosition, setBallPosition] = useState(null);
@@ -500,35 +510,25 @@ const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChang
         // Play bin land sound
         playAudio(binLandAudioRef);
         
-        // Add to bet history
+        // Add to bet history with Flow VRF integration
         const newBetResult = {
           id: Date.now(),
           game: "Plinko",
           title: new Date().toLocaleTimeString(),
-          betAmount: latestBetAmount.toFixed(5),
+          betAmount: formatBalance(latestBetAmount),
           multiplier: multipliers[binIndex],
-          payout: reward.toFixed(5),
-          timestamp: Date.now()
+          payout: formatBalance(reward),
+          timestamp: Date.now(),
+          rows: currentRows,
+          riskLevel: currentRiskLevel,
+          binIndex: binIndex
         };
         setBetHistory(prev => {
           const updated = [newBetResult, ...prev.slice(0, 99)]; // Keep last 100
           return updated;
         });
-        // Fire-and-forget casino session log
-        try {
-          fetch('/api/casino-session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              sessionId: `plinko_${Date.now()}`,
-              gameType: 'PLINKO',
-              requestId: `plinko_request_${Date.now()}`,
-              valueEth: 0
-            })
-          }).catch(() => {});
-        } catch {}
         
-        // Notify parent component about bet history change
+        // Notify parent component about bet history change (will trigger Flow VRF)
         if (onBetHistoryChange) {
           console.log('📞 PlinkoGame: Calling onBetHistoryChange with:', newBetResult);
           onBetHistoryChange(newBetResult);
@@ -584,9 +584,9 @@ const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChang
       console.warn('Insufficient balance for bet:', {
         currentBalance: currentBalance,
         betAmount: latestBetAmount,
-        balanceInETH: currentBalance.toFixed(9)
+        balanceInETH: formatBalance(currentBalance)
       });
-              alert(`Insufficient balance! You have ${currentBalance.toFixed(9)} FLOW but need ${latestBetAmount} FLOW`);
+              alert(`Insufficient balance! You have ${formatBalance(currentBalance)} FLOW but need ${latestBetAmount} FLOW`);
       return;
     }
     
@@ -828,7 +828,7 @@ const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChang
           <div className="text-xs text-gray-400">Best Multiplier</div>
         </div>
         <div className="text-center">
-                          <div className="text-2xl font-bold text-white">{totalWon.toFixed(5)} FLOW</div>
+                          <div className="text-2xl font-bold text-white">{formatBalance(totalWon)} FLOW</div>
           <div className="text-xs text-gray-400">Total Won</div>
         </div>
       </div>

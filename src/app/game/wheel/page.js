@@ -15,11 +15,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import { setBalance, setLoading, loadBalanceFromStorage } from '@/store/balanceSlice';
 import { useNotification } from '@/components/NotificationSystem';
 import useWalletStatus from '@/hooks/useWalletStatus';
-// Pyth Entropy integration for randomness
-// import vrfProofService from '@/services/VRFProofService';
-// import VRFProofRequiredModal from '@/components/VRF/VRFProofRequiredModal';
-// import vrfLogger from '@/services/VRFLoggingService';
-import pythEntropyService from '@/services/PythEntropyService';
+// Flow VRF integration for randomness
+import { flowVRFService } from '@/services/FlowVRFService';
 
 // Import new components
 import WheelVideo from "./components/WheelVideo";
@@ -30,7 +27,7 @@ import WheelPayouts from "./components/WheelPayouts";
 import WheelHistory from "./components/WheelHistory";
 
 export default function Home() {
-  const [betAmount, setBetAmount] = useState(0.001);
+  const [betAmount, setBetAmount] = useState(100);
   const [risk, setRisk] = useState("medium");
   const [noOfSegments, setSegments] = useState(10);
   const [isSpinning, setIsSpinning] = useState(false);
@@ -53,6 +50,16 @@ export default function Home() {
   const { userBalance, isLoading: isLoadingBalance } = useSelector((state) => state.balance);
   const notification = useNotification();
   const { isConnected } = useWalletStatus();
+  
+  // Format balance for display (show 0 instead of 0.00000)
+  const formatBalance = (balance) => {
+    const num = parseFloat(balance || '0');
+    if (num === 0) return '0';
+    // If it's a whole number, show without decimals
+    if (num % 1 === 0) return num.toString();
+    // Otherwise show with up to 5 decimals, removing trailing zeros
+    return parseFloat(num.toFixed(5)).toString();
+  };
   
   // Use ref to prevent infinite loop in useEffect
   const isInitialized = useRef(false);
@@ -84,7 +91,7 @@ export default function Home() {
 
   // Game modes
   const manulBet = async () => {
-    if (betAmount <= 0 || isSpinning) return;
+    if (betAmount < 1 || isSpinning) return;
 
     // Check if wallet is connected first
     console.log('🔌 Wheel Bet - Wallet Status:', { isConnected, userBalance });
@@ -93,34 +100,34 @@ export default function Home() {
       return;
     }
 
-    // Generate Pyth Entropy in background for provably fair proof
-  const generateEntropyInBackground = async (historyItemId) => {
+    // Generate Flow VRF in background for provably fair proof
+  const generateVRFInBackground = async (historyItemId) => {
     try {
-      console.log('🔮 PYTH ENTROPY: Generating background entropy for Wheel game...');
+      console.log('🔮 FLOW VRF: Generating background VRF for Wheel game...');
       
-      const entropyResult = await pythEntropyService.generateRandom('WHEEL', { 
+      const vrfResult = await flowVRFService.requestRandomness('WHEEL', { 
         purpose: 'wheel_spin', 
-        gameType: 'WHEEL' 
+        gameType: 'WHEEL',
+        betAmount: betAmount,
+        segments: noOfSegments
       });
       
-      console.log('✅ PYTH ENTROPY: Background entropy generated successfully');
-      console.log('🔗 Transaction:', entropyResult.entropyProof.transactionHash);
+      console.log('✅ FLOW VRF: Background VRF generated successfully');
+      console.log('🔗 Transaction:', vrfResult.transactionHash);
       
       // Update the history item with real entropy proof
       setGameHistory(prev => prev.map(item => 
         item.id === historyItemId 
           ? {
               ...item,
-              entropyProof: {
-                requestId: entropyResult.entropyProof?.requestId,
-                sequenceNumber: entropyResult.entropyProof?.sequenceNumber,
-                randomValue: entropyResult.randomValue,
-                randomNumber: entropyResult.randomValue,
-                transactionHash: entropyResult.entropyProof?.transactionHash,
-                arbiscanUrl: entropyResult.entropyProof?.arbiscanUrl,
-                explorerUrl: entropyResult.entropyProof?.explorerUrl,
-                timestamp: entropyResult.entropyProof?.timestamp,
-                source: 'Pyth Entropy'
+              vrfData: {
+                requestId: vrfResult.requestId,
+                randomValue: vrfResult.randomValue,
+                transactionHash: vrfResult.transactionHash,
+                blockHeight: vrfResult.blockHeight,
+                explorerUrl: `https://testnet.flowscan.org/transaction/${vrfResult.transactionHash}`,
+                timestamp: vrfResult.timestamp,
+                source: 'Flow VRF'
               }
             }
           : item
@@ -132,7 +139,7 @@ export default function Home() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            sessionId: entropyResult.entropyProof?.requestId || `wheel_${Date.now()}`,
+            sessionId: vrfResult.transactionId || `wheel_${Date.now()}`,
             gameType: 'WHEEL',
             channelId: entropyResult.entropyProof?.requestId || 'entropy_channel',
             valueEth: 0
@@ -148,7 +155,7 @@ export default function Home() {
       }
       
     } catch (error) {
-      console.error('❌ PYTH ENTROPY: Background generation failed:', error);
+      console.error('❌ FLOW VRF: Background generation failed:', error);
     }
   };
 
@@ -156,7 +163,7 @@ export default function Home() {
     const currentBalance = parseFloat(userBalance || '0');
     
     if (currentBalance < betAmount) {
-      alert(`Insufficient balance. You have ${currentBalance.toFixed(5)} FLOW but need ${betAmount} FLOW`);
+      alert(`Insufficient balance. You have ${formatBalance(currentBalance)} FLOW but need ${betAmount} FLOW`);
       return;
     }
 
@@ -173,7 +180,7 @@ export default function Home() {
       const newBalance = (parseFloat(userBalance || '0') - betAmount).toString();
       dispatch(setBalance(newBalance));
       
-      console.log('Balance deducted. New balance:', parseFloat(newBalance).toFixed(5), 'FLOW');
+      console.log('Balance deducted. New balance:', formatBalance(newBalance), 'FLOW');
       
       // Set up callback to handle wheel animation completion
       window.wheelBetCallback = async (landedMultiplier) => {
@@ -210,9 +217,9 @@ export default function Home() {
             id: Date.now(),
             game: 'Wheel',
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            betAmount: betAmount.toFixed(5),
+            betAmount: formatBalance(betAmount),
             multiplier: `${actualMultiplier.toFixed(2)}x`,
-            payout: winAmount.toFixed(5),
+            payout: formatBalance(winAmount),
             result: 0,
             color: detectedColor
           };
@@ -225,7 +232,7 @@ export default function Home() {
             randomNumber: Math.floor(Math.random() * 1000000),
             transactionHash: 'generating...',
             arbiscanUrl: 'https://testnet.arbiscan.io/',
-            explorerUrl: 'https://entropy-explorer.pyth.network/?chain=flow-testnet',
+            explorerUrl: 'https://testnet.flowscan.org',
             timestamp: Date.now(),
             source: 'Generating...'
           };
@@ -237,16 +244,16 @@ export default function Home() {
           
           // Show result and update balance immediately
           if (actualMultiplier > 0) {
-            notification.success(`Congratulations! ${betAmount} FLOW × ${actualMultiplier.toFixed(2)} = ${winAmount.toFixed(5)} FLOW won!`);
+            notification.success(`Congratulations! ${betAmount} FLOW × ${actualMultiplier.toFixed(2)} = ${formatBalance(winAmount)} FLOW won!`);
             
             // Update balance with winnings
             const currentBalance = parseFloat(userBalance || '0');
             const newBalanceWithWin = currentBalance + winAmount;
             
             console.log('💰 Adding winnings:', {
-              currentBalance: currentBalance.toFixed(5),
-              winAmount: winAmount.toFixed(5),
-              newBalance: newBalanceWithWin.toFixed(5)
+              currentBalance: formatBalance(currentBalance),
+              winAmount: formatBalance(winAmount),
+              newBalance: formatBalance(newBalanceWithWin)
             });
             
             dispatch(setBalance(newBalanceWithWin.toString()));
@@ -254,8 +261,8 @@ export default function Home() {
             notification.info(`Game over. Multiplier: ${actualMultiplier.toFixed(2)}x`);
           }
 
-          // Generate Pyth Entropy in background for provably fair proof
-          generateEntropyInBackground(newHistoryItem.id).catch(error => {
+          // Generate Flow VRF in background for provably fair proof
+          generateVRFInBackground(newHistoryItem.id).catch(error => {
             console.error('❌ Background entropy generation failed:', error);
           });
           
@@ -323,13 +330,13 @@ export default function Home() {
       let currentBalance = parseFloat(userBalance || '0');
       
       console.log(`💰 Auto bet ${i + 1} balance check:`, {
-        currentBalance: currentBalance.toFixed(5),
-        currentBet: currentBet.toFixed(5),
+        currentBalance: formatBalance(currentBalance),
+        currentBet: formatBalance(currentBet),
         hasEnoughBalance: currentBalance >= currentBet
       });
       
       if (currentBalance < currentBet) {
-        alert(`Insufficient balance for bet ${i + 1}. Need ${currentBet.toFixed(5)} FLOW but have ${currentBalance.toFixed(5)} FLOW`);
+        alert(`Insufficient balance for bet ${i + 1}. Need ${formatBalance(currentBet)} FLOW but have ${formatBalance(currentBalance)} FLOW`);
         break;
       }
 
@@ -418,9 +425,9 @@ export default function Home() {
         const newBalanceWithWin = currentBalance + winAmount;
         
         console.log('💰 Auto bet winnings:', {
-          currentBalance: currentBalance.toFixed(5),
-          winAmount: winAmount.toFixed(5),
-          newBalance: newBalanceWithWin.toFixed(5)
+          currentBalance: formatBalance(currentBalance),
+          winAmount: formatBalance(winAmount),
+          newBalance: formatBalance(newBalanceWithWin)
         });
         
         dispatch(setBalance(newBalanceWithWin.toString()));
@@ -432,7 +439,7 @@ export default function Home() {
       
       // Show notification for win
       if (actualMultiplier > 0) {
-        notification.success(`Congratulations! ${currentBet} FLOW × ${actualMultiplier.toFixed(2)} = ${winAmount.toFixed(8)} FLOW won!`);
+        notification.success(`Congratulations! ${currentBet} FLOW × ${actualMultiplier.toFixed(2)} = ${formatBalance(winAmount)} FLOW won!`);
       }
 
       // Store history entry
@@ -481,7 +488,7 @@ export default function Home() {
       // Clamp bet to balance
       currentBalance = parseFloat(userBalance || '0');
       if (currentBet > currentBalance) {
-        console.log(`💰 Bet amount ${currentBet.toFixed(5)} exceeds balance ${currentBalance.toFixed(5)}, clamping to balance`);
+        console.log(`💰 Bet amount ${formatBalance(currentBet)} exceeds balance ${formatBalance(currentBalance)}, clamping to balance`);
         currentBet = currentBalance;
       }
       if (currentBet <= 0) currentBet = initialBetAmount;
