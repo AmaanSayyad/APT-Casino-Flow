@@ -693,7 +693,7 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
                       </Box>
                       <Typography variant="body2" color="rgba(255,255,255,0.7)">Total Wagered</Typography>
                     </Box>
-                    <Typography variant="h4" fontWeight="bold" color="white" sx={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>{formatETHAmount(stats.totalWagered)} FLOW</Typography>
+                    <Typography variant="h4" fontWeight="bold" color="white" sx={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>{formatFLOWAmount(stats.totalWagered)} FLOW</Typography>
                   </Box>
                   
                   <Box 
@@ -735,7 +735,7 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
                       color={stats.netProfit >= 0 ? '#14D854' : '#d82633'}
                       sx={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}
                     >
-                      {stats.netProfit >= 0 ? '+' : ''}{formatETHAmount(stats.netProfit)} FLOW
+                      {stats.netProfit >= 0 ? '+' : ''}{formatFLOWAmount(stats.netProfit)} FLOW
                     </Typography>
                   </Box>
                 </Box>

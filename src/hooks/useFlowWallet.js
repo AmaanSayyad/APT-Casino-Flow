@@ -111,7 +111,47 @@ export const useFlowWallet = () => {
     return 0;
   }, [user.loggedIn, user.addr]);
 
-  // Execute a transaction
+  // Execute a treasury-sponsored transaction via API
+  const executeTreasuryTransaction = useCallback(async (gameType, gameParams) => {
+    try {
+      console.log('🏦 Executing treasury-sponsored transaction via API...');
+      console.log('🎮 Game type:', gameType);
+      console.log('📊 Game params:', gameParams);
+      console.log('👤 Player address:', user.addr);
+
+      if (!user.addr) {
+        throw new Error('Player address not available - please connect wallet first');
+      }
+
+      // Call treasury transaction API
+      const response = await fetch('/api/treasury-transaction', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          gameType,
+          playerAddress: user.addr,
+          gameParams
+        })
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Treasury transaction failed');
+      }
+
+      console.log('✅ Treasury transaction completed:', result.transactionId);
+
+      return result.transaction;
+    } catch (err) {
+      console.error('❌ Treasury transaction failed:', err);
+      throw new Error(`Treasury transaction failed: ${err.message}`);
+    }
+  }, [user.addr]);
+
+  // Execute a regular user transaction (deprecated - use treasury instead)
   const executeTransaction = useCallback(async (cadence, args = [], limit = 1000) => {
     if (!user.loggedIn) {
       throw new Error('Kullanıcı Flow cüzdanına bağlı değil');
@@ -259,6 +299,7 @@ export const useFlowWallet = () => {
     disconnect,
     getFlowBalance,
     executeTransaction,
+    executeTreasuryTransaction,
     executeScript,
     transferToTreasury,
 
