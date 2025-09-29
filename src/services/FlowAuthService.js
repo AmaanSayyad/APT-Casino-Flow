@@ -106,12 +106,7 @@ export class FlowAuthService {
       // Execute transaction
       const transactionId = await fcl.mutate({
         cadence,
-        args: (arg, t) => {
-          if (typeof args === 'function') {
-            return args(arg, t);
-          }
-          return args;
-        },
+        args,
         limit: gasLimit,
         payer: authz,
         proposer: authz,
