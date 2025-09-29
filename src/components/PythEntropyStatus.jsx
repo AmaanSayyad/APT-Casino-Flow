@@ -123,7 +123,7 @@ const PythEntropyStatus = ({ network = 'flow-testnet' }) => {
               size="small"
             />
             <Chip
-              label="Pyth Entropy"
+              label="Flow VRF"
               color="primary"
               size="small"
             />

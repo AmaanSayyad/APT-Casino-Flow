@@ -465,7 +465,7 @@ const WheelHistory = ({ gameHistory = [] }) => {
                   borderBottom: '1px solid rgba(104, 29, 219, 0.2)'
                 }}
               >
-                Entropy Proof
+                Flow VRF
               </TableCell>
             </TableRow>
           </TableHead>
@@ -572,12 +572,14 @@ const WheelHistory = ({ gameHistory = [] }) => {
                       borderBottom: '1px solid rgba(104, 29, 219, 0.1)'
                     }}
                   >
-                    {item.entropyProof ? (
+                    {(item.flowVRF || item.entropyProof) ? (
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <Chip 
                             icon={<FaCheck size={10} />}
-                            label={item.entropyProof.sequenceNumber ? 
+                            label={item.flowVRF?.transactionId ? 
+                                  `TX: ${item.flowVRF.transactionId.slice(0, 8)}...` : 
+                                  item.entropyProof?.sequenceNumber ? 
                                   `#${item.entropyProof.sequenceNumber}` : 
                                   'N/A'
                                 }
@@ -596,28 +598,33 @@ const WheelHistory = ({ gameHistory = [] }) => {
                           />
                           <Button
                             onClick={() => {
-                              if (item.entropyProof.transactionHash) {
-                                window.open(`https://entropy-explorer.pyth.network/?chain=flow-testnet&search=${item.entropyProof.transactionHash}`, '_blank');
+                              if (item.flowVRF?.transactionId) {
+                                window.open(`https://testnet.flowscan.io/tx/${item.flowVRF.transactionId}`, '_blank');
                               }
+                              // Remove Pyth Explorer fallback - only open if we have Flow transaction
                             }}
+                            disabled={!item.flowVRF?.transactionId}
                             size="small"
                             startIcon={<FaExternalLinkAlt size={10} />}
                             sx={{ 
-                              color: '#681DDB',
+                              color: item.flowVRF?.transactionId ? '#681DDB' : 'rgba(255,255,255,0.3)',
                               fontSize: '0.7rem',
                               minWidth: 'auto',
                               p: 0,
                               '&:hover': {
                                 backgroundColor: 'transparent',
-                                textDecoration: 'underline',
+                                textDecoration: item.flowVRF?.transactionId ? 'underline' : 'none',
+                              },
+                              '&:disabled': {
+                                color: 'rgba(255,255,255,0.3)',
                               }
                             }}
                           >
-                            Entropy
+                            {item.flowVRF?.transactionId ? 'Flow VRF' : 'Loading...'}
                           </Button>
                         </Box>
                         <Typography variant="caption" color="rgba(255,255,255,0.5)">
-                          Pyth Entropy
+                          Flow VRF
                         </Typography>
                       </Box>
                     ) : (

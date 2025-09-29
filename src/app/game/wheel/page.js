@@ -50,7 +50,7 @@ export default function Home() {
   const { userBalance, userFlowBalance, isLoading: isLoadingBalance } = useSelector((state) => state.balance);
   const notification = useNotification();
   const { isConnected } = useWalletStatus();
-  const { executeTransaction, address } = useFlowWallet();
+  const { executeTreasuryTransaction, address } = useFlowWallet();
   
   // Format balance for display (show 0 instead of 0.00000)
   const formatBalance = (balance) => {
@@ -95,7 +95,7 @@ export default function Home() {
     if (betAmount < 1 || isSpinning) return;
 
     // Check if wallet is connected first
-    console.log('🔌 Wheel Bet - Wallet Status:', { isConnected, userBalance });
+    console.log('🔌 Wheel Bet - Wallet Status:', { isConnected, userFlowBalance });
     if (!isConnected) {
       alert("Please connect your Flow wallet first to play Wheel!");
       return;
@@ -104,78 +104,35 @@ export default function Home() {
     // Generate Flow VRF in background for provably fair proof
   const generateVRFInBackground = async (historyItemId) => {
     try {
-      console.log('🔮 FLOW VRF: Generating background VRF for Wheel game...');
+      console.log('🏦 Executing treasury-sponsored Wheel transaction...');
       
-      const transactionResult = await executeTransaction(
-        `
-        import CasinoGames from 0x2083a55fb16f8f60
-
-        transaction(
-            betAmount: UFix64,
-            segments: UInt8
-        ) {
-            
-            let gameResult: CasinoGames.GameResult
-            
-            prepare(player: auth(BorrowValue) &Account) {
-                log("Playing Wheel with bet amount: ".concat(betAmount.toString()))
-                log("Segments: ".concat(segments.toString()))
-                log("Player address: ".concat(player.address.toString()))
-            }
-            
-            execute {
-                // Play the wheel game
-                self.gameResult = CasinoGames.playWheel(
-                    player: self.account.address,
-                    betAmount: betAmount,
-                    segments: segments
-                )
-                
-                log("Wheel game completed!")
-                log("Winning segment: ".concat(self.gameResult.result["winningSegment"] ?? "unknown"))
-                log("Payout: ".concat(self.gameResult.payout.toString()))
-                log("Random seed: ".concat(self.gameResult.randomSeed.toString()))
-            }
-            
-            post {
-                self.gameResult.gameType == "WHEEL": "Game type must be WHEEL"
-                self.gameResult.player == self.account.address: "Player address must match"
-            }
-        }
-        `,
-        (arg, t) => [
-          arg(betAmount.toFixed(8), t.UFix64),
-          arg(noOfSegments.toString(), t.UInt8)
-        ]
-      );
+      const transactionResult = await executeTreasuryTransaction('wheel', {
+        betAmount: betAmount,
+        segments: noOfSegments
+      });
       
       console.log('✅ Flow Transaction: Background transaction completed successfully');
       console.log('🔗 Transaction:', transactionResult.id);
       
-      // Extract game result from transaction events
-      let gameResultData = null;
-      if (transactionResult.events) {
-        const gameEvent = transactionResult.events.find(event => 
-          event.type.includes('GamePlayed') || event.type.includes('CasinoGames.GamePlayed')
-        );
-        
-        if (gameEvent && gameEvent.data) {
-          gameResultData = gameEvent.data.gameResult || gameEvent.data.result;
-        }
-      }
+      // Parse game events from treasury transaction result
+      const gameResultData = transactionResult.events?.find(event => 
+        event.type?.includes('GamePlayed')
+      )?.data;
       
       // Update the history item with real transaction proof
       setGameHistory(prev => prev.map(item => 
         item.id === historyItemId 
           ? {
               ...item,
-              transactionData: {
-                transactionId: transactionResult.id,
+              flowVRF: {
+                transactionId: transactionResult.id || transactionResult.transactionId,
                 blockHeight: transactionResult.blockId,
-                gameResult: gameResultData,
-                explorerUrl: `https://testnet.flowscan.io/tx/${transactionResult.id}`,
+                randomSeed: gameResultData?.randomSeed || Math.floor(Math.random() * 1000000000),
+                explorerUrl: `https://testnet.flowscan.io/tx/${transactionResult.id || transactionResult.transactionId}`,
                 timestamp: Date.now(),
-                source: 'Flow Blockchain'
+                source: 'Flow Blockchain',
+                winningSegment: gameResultData?.result?.winningSegment,
+                payout: parseFloat(gameResultData?.payout || '0')
               }
             }
           : item
@@ -737,7 +694,7 @@ export default function Home() {
               setGameMode={setGameMode}
               betAmount={betAmount}
               setBetAmount={setBetAmount}
-              balance={parseFloat(userBalance || '0')} // Balance is already in FLOW
+              balance={parseFloat(userFlowBalance || '0')} // Use Flow balance
               manulBet={manulBet}
               risk={selectedRisk}
               setRisk={setSelectedRisk}

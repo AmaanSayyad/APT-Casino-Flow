@@ -97,6 +97,51 @@ const GAME_TRANSACTIONS = {
     }
   `,
   
+  wheel: `
+    import CasinoGames from 0x2083a55fb16f8f60
+
+    transaction(
+        playerAddress: Address,
+        betAmount: UFix64,
+        segments: UInt8
+    ) {
+        var gameResult: CasinoGames.GameResult?
+
+        prepare(treasury: auth(BorrowValue) &Account) {
+            log("🏦 Treasury-sponsored Wheel transaction")
+            log("Player address: ".concat(playerAddress.toString()))
+            log("Bet amount: ".concat(betAmount.toString()).concat(" FLOW"))
+            log("Segments: ".concat(segments.toString()))
+            log("Treasury address: ".concat(treasury.address.toString()))
+            
+            // Initialize gameResult to nil
+            self.gameResult = nil
+        }
+
+        execute {
+            self.gameResult = CasinoGames.playWheel(
+                player: playerAddress,
+                betAmount: betAmount,
+                segments: segments
+            )
+            
+            log("✅ Treasury-sponsored Wheel game completed!")
+            if let result = self.gameResult {
+                log("🎰 Winning segment: ".concat(result.result["winningSegment"] ?? "unknown"))
+                log("🔢 Random seed: ".concat(result.randomSeed.toString()))
+                log("💎 Payout: ".concat(result.payout.toString()).concat(" FLOW"))
+            }
+        }
+
+        post {
+            self.gameResult != nil: "Game result must be set"
+            self.gameResult!.gameType == "WHEEL": "Game type must be WHEEL"
+            self.gameResult!.player == playerAddress: "Player address must match"
+            self.gameResult!.betAmount == betAmount: "Bet amount must match"
+        }
+    }
+  `,
+  
   plinko: `
     import CasinoGames from 0x2083a55fb16f8f60
 
@@ -197,6 +242,13 @@ export async function POST(request) {
         arg(gameParams.revealedTiles || [], t.Array(t.UInt8)),
         arg(gameParams.cashOut || false, t.Bool)
       ];
+    } else if (gameType.toLowerCase() === 'wheel') {
+      const betAmount = parseFloat(gameParams.betAmount || 0);
+      args = (arg, t) => [
+        arg(playerAddress, t.Address),
+        arg(betAmount.toFixed(8), t.UFix64),
+        arg(gameParams.segments || 10, t.UInt8)
+      ];
     }
 
     // Create temporary transaction file
@@ -220,6 +272,9 @@ export async function POST(request) {
       const betAmount = parseFloat(gameParams.betAmount || 0);
       const finalPosition = gameParams.finalPosition || 0; // Frontend-calculated position
       flowArgs = `${playerAddress} ${betAmount.toFixed(8)} "${gameParams.risk || 'medium'}" ${gameParams.rows || 16} ${finalPosition}`;
+    } else if (gameType.toLowerCase() === 'wheel') {
+      const betAmount = parseFloat(gameParams.betAmount || 0);
+      flowArgs = `${playerAddress} ${betAmount.toFixed(8)} ${gameParams.segments || 10}`;
     }
 
     // Use existing treasury transaction file instead of creating new one

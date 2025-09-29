@@ -138,20 +138,21 @@ const GameHistory = ({ gameHistory }) => {
                       </span>
                     </td>
                     <td className="py-6 px-4">
-                      {item.vrfData ? (
+                      {(item.flowVRF || item.vrfData) ? (
                         <div className="text-xs text-gray-300 font-mono">
                           <div className="text-green-400 font-bold">
-                            {item.vrfData.requestId ? `Request: ${item.vrfData.requestId.slice(0, 8)}...` : ''}
+                            {item.flowVRF?.transactionId ? `TX: ${item.flowVRF.transactionId.slice(0, 8)}...` : 
+                             item.vrfData?.requestId ? `Request: ${item.vrfData.requestId.slice(0, 8)}...` : ''}
                           </div>
-                          {item.vrfData.randomValue && (
+                          {(item.flowVRF?.randomSeed || item.vrfData?.randomValue) && (
                             <div className="text-blue-400">
-                              Random: {item.vrfData.randomValue.slice(0, 8)}...
+                              Random: {(item.flowVRF?.randomSeed || item.vrfData?.randomValue)?.toString().slice(0, 8)}...
                             </div>
                           )}
                           <div className="flex gap-1 mt-1">
-                            {item.vrfData.transactionHash && (
+                            {item.flowVRF?.transactionId && (
                               <button
-                                onClick={() => openFlowExplorer(item.vrfData.transactionHash)}
+                                onClick={() => openFlowExplorer(item.flowVRF.transactionId)}
                                 className="flex items-center gap-1 px-2 py-1 bg-green-500/10 border border-green-500/30 rounded text-green-400 text-xs hover:bg-green-500/20 transition-colors"
                               >
                                 <FaExternalLinkAlt size={8} />
