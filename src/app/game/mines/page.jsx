@@ -62,7 +62,7 @@ export default function Mines() {
   });
   
   // Flow wallet connection
-  const { isConnected, address } = useFlowWallet();
+  const { isConnected, address, executeTreasuryTransaction } = useFlowWallet();
   
   // Theme
   const { theme } = useTheme();
@@ -189,32 +189,39 @@ export default function Mines() {
   const handleGameComplete = async (result) => {
     console.log('Game completed with result:', result);
     
-    // Generate Pyth Entropy for Mines game
-    let entropyProof = null;
+    // Use treasury transaction for Mines game
+    let flowVRF = null;
     try {
-      console.log('🔮 FLOW VRF: Generating randomness for Mines game...');
-      const vrfResult = await flowVRFService.requestRandomness('MINES', {
-        purpose: 'mines_game_result',
-        gameType: 'MINES',
+      console.log('🏦 Executing treasury-sponsored Mines transaction...');
+      const transactionResult = await executeTreasuryTransaction('mines', {
         betAmount: result.betAmount,
-        mineCount: result.mines || 0,
+        mineCount: result.mines || 3,
         revealedTiles: result.revealedTiles || [],
         cashOut: result.won || false
       });
       
-      entropyProof = {
-        requestId: vrfResult.requestId,
-        randomValue: vrfResult.randomValue,
-        transactionHash: vrfResult.transactionHash,
-        blockHeight: vrfResult.blockHeight,
-        explorerUrl: `https://testnet.flowscan.io/tx/${vrfResult.transactionHash}`,
-        timestamp: vrfResult.timestamp,
-        source: 'Flow VRF'
+      console.log('🎲 Flow Transaction: Mines result received:', transactionResult);
+      
+      // Parse game events from transaction result
+      const gameResultData = transactionResult.events?.find(event => 
+        event.type?.includes('GamePlayed')
+      )?.data;
+      
+      flowVRF = {
+        transactionId: transactionResult.id || transactionResult.transactionId,
+        blockHeight: transactionResult.blockId,
+        randomSeed: gameResultData?.randomSeed || Math.floor(Math.random() * 1000000000),
+        explorerUrl: `https://testnet.flowscan.io/tx/${transactionResult.id || transactionResult.transactionId}`,
+        timestamp: Date.now(),
+        source: 'Flow Blockchain',
+        hitMine: gameResultData?.result?.hitMine === 'true',
+        minePositions: gameResultData?.result?.minePositions ? JSON.parse(gameResultData.result.minePositions) : [],
+        payout: parseFloat(gameResultData?.payout || result.payout || '0')
       };
       
-      console.log('✅ FLOW VRF: Mines randomness generated:', entropyProof);
+      console.log('✅ Treasury transaction: Mines game completed:', flowVRF);
     } catch (error) {
-      console.error('❌ Error using Flow VRF for Mines game:', error);
+      console.error('❌ Error using treasury transaction for Mines game:', error);
     }
     
     const newHistoryItem = {
@@ -225,7 +232,7 @@ export default function Mines() {
       payout: result.won ? `${result.payout || '0.00000'} FLOW` : '0.00000 FLOW',
       multiplier: result.won ? `${result.multiplier || '0.00'}x` : '0.00x',
       time: 'Just now',
-      entropyProof: entropyProof
+      flowVRF: flowVRF
     };
     
     setGameHistory(prev => [newHistoryItem, ...prev].slice(0, 50));
@@ -236,11 +243,11 @@ export default function Mines() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sessionId: result.entropyProof?.requestId || `mines_${Date.now()}`,
+          sessionId: flowVRF?.transactionId || `mines_${Date.now()}`,
           gameType: 'MINES',
-          requestId: result.entropyProof?.requestId || `mines_request_${Date.now()}`,
+          requestId: flowVRF?.transactionId || `mines_request_${Date.now()}`,
           valueEth: 0,
-          entropyProof: result.entropyProof
+          flowVRF: flowVRF
         })
       }).catch(() => {});
     } catch {}

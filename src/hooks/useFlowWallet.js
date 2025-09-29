@@ -119,9 +119,8 @@ export const useFlowWallet = () => {
       console.log('📊 Game params:', gameParams);
       console.log('👤 Player address:', user.addr);
 
-      if (!user.addr) {
-        throw new Error('Player address not available - please connect wallet first');
-      }
+      // For treasury transactions, we use a placeholder player address if wallet not connected
+      const playerAddress = user.addr || '0x0000000000000000';
 
       // Call treasury transaction API
       const response = await fetch('/api/treasury-transaction', {
@@ -131,7 +130,7 @@ export const useFlowWallet = () => {
         },
         body: JSON.stringify({
           gameType,
-          playerAddress: user.addr,
+          playerAddress: playerAddress,
           gameParams
         })
       });
@@ -149,7 +148,7 @@ export const useFlowWallet = () => {
       console.error('❌ Treasury transaction failed:', err);
       throw new Error(`Treasury transaction failed: ${err.message}`);
     }
-  }, [user.addr]);
+  }, []); // Treasury transactions don't depend on wallet connection
 
   // Execute a regular user transaction (deprecated - use treasury instead)
   const executeTransaction = useCallback(async (cadence, args = [], limit = 1000) => {

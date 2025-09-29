@@ -1203,6 +1203,7 @@ export default function GameRoulette() {
   const [isMuted, setIsMuted] = useState(false);
   const [bettingHistory, setBettingHistory] = useState([]);
   const [error, setError] = useState(null);
+  const [vrfNotificationId, setVrfNotificationId] = useState(null);
 
   // Flow wallet
   const { address, isConnected, executeTransaction, executeTreasuryTransaction } = useFlowWallet();
@@ -1926,11 +1927,9 @@ export default function GameRoulette() {
       // Set notification to bet placed
       setNotificationIndex(notificationSteps.BET_PLACED);
 
-      // Show VRF waiting notification
-      notification.info('🎲 Waiting for VRF result... Getting random number from Flow blockchain', {
-        duration: 0, // Keep it until we manually close it
-        key: 'vrf-waiting'
-      });
+      // Show VRF waiting notification and store the ID
+      const notificationId = notification.info('🎲 Waiting for VRF result... Getting random number from Flow blockchain');
+      setVrfNotificationId(notificationId);
 
       // Execute treasury-sponsored Flow transaction for roulette game FIRST
       // Don't generate local random number - wait for blockchain result
@@ -1978,7 +1977,10 @@ export default function GameRoulette() {
           }
 
           // Close VRF waiting notification
-          notification.destroy('vrf-waiting');
+          if (vrfNotificationId) {
+            notification.closeNotification(vrfNotificationId);
+            setVrfNotificationId(null);
+          }
 
           // Use the transaction result as the winning number
           setRollResult(winningNumber);
@@ -2104,7 +2106,10 @@ export default function GameRoulette() {
           console.error('❌ Flow Transaction: Error processing Roulette game:', error);
           
           // Close VRF waiting notification
-          notification.destroy('vrf-waiting');
+          if (vrfNotificationId) {
+            notification.closeNotification(vrfNotificationId);
+            setVrfNotificationId(null);
+          }
           
           // Generate fallback random number for UI
           const fallbackNumber = Math.floor(Math.random() * 37);

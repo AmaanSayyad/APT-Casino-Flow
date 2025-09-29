@@ -310,22 +310,23 @@ const MinesHistory = ({ gameHistory = [], userStats = {} }) => {
                 <span>{game.time}</span>
               </div>
               <div className="text-white/70 flex items-center justify-center">
-                {game.entropyProof ? (
+                {(game.flowVRF || game.entropyProof) ? (
                   <div className="flex flex-col gap-1 items-center">
                     <div className="text-xs text-gray-300 font-mono text-center">
                       <div className="text-green-400 font-bold">
-                        {game.entropyProof.requestId ? `Request: ${game.entropyProof.requestId.slice(0, 8)}...` : ''}
+                        {game.flowVRF?.transactionId ? `TX: ${game.flowVRF.transactionId.slice(0, 8)}...` : 
+                         game.entropyProof?.requestId ? `Request: ${game.entropyProof.requestId.slice(0, 8)}...` : ''}
                       </div>
-                      {game.entropyProof.randomValue && (
+                      {(game.flowVRF?.randomSeed || game.entropyProof?.randomValue) && (
                         <div className="text-blue-400">
-                          Random: {game.entropyProof.randomValue.slice(0, 8)}...
+                          Random: {(game.flowVRF?.randomSeed || game.entropyProof?.randomValue)?.toString().slice(0, 8)}...
                         </div>
                       )}
                     </div>
                     <div className="flex gap-1">
-                      {game.entropyProof.transactionHash && (
+                      {(game.flowVRF?.transactionId || game.entropyProof?.transactionHash) && (
                         <button
-                          onClick={() => openFlowExplorer(game.entropyProof.transactionHash)}
+                          onClick={() => openFlowExplorer(game.flowVRF?.transactionId || game.entropyProof?.transactionHash)}
                           className="flex items-center gap-1 px-2 py-1 bg-green-500/10 border border-green-500/30 rounded text-green-400 text-xs hover:bg-green-500/20 transition-colors"
                         >
                           <FaExternalLinkAlt size={8} />

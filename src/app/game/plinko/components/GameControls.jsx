@@ -6,7 +6,7 @@ import useWalletStatus from '@/hooks/useWalletStatus';
 
 
 export default function GameControls({ onBet, onRowChange, onRiskLevelChange, onBetAmountChange, initialRows = 16, initialRiskLevel = "Medium" }) {
-  const { userBalance, userFlowBalance } = useSelector((state) => state.balance);
+  const { userFlowBalance } = useSelector((state) => state.balance);
   const { isConnected } = useWalletStatus();
   
   const [gameMode, setGameMode] = useState("manual");
@@ -105,7 +105,7 @@ export default function GameControls({ onBet, onRowChange, onRiskLevelChange, on
     // Check if wallet is connected
     console.log('🔌 Plinko Bet - Wallet Status:', { 
       isConnected, 
-      userBalance,
+      userFlowBalance,
       windowEthereum: !!window.flow,
       windowEthereumConnected: window.flow?.isConnected?.(),
       windowEthereumAccount: window.flow?.selectedAddress
@@ -330,7 +330,7 @@ export default function GameControls({ onBet, onRowChange, onRiskLevelChange, on
 
   // Get current balance in FLOW for display
   const getCurrentBalanceInETH = () => {
-    const balance = parseFloat(userBalance || '0');
+    const balance = parseFloat(userFlowBalance || '0');
     return balance === 0 ? '0' : balance.toFixed(5);
   };
 

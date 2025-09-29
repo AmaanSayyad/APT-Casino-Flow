@@ -95,6 +95,55 @@ const GAME_TRANSACTIONS = {
             self.gameResult!.player == playerAddress: "Player address must match"
         }
     }
+  `,
+  
+  plinko: `
+    import CasinoGames from 0x2083a55fb16f8f60
+
+    transaction(
+        playerAddress: Address,
+        betAmount: UFix64,
+        risk: String,
+        rows: UInt8
+    ) {
+        var gameResult: CasinoGames.GameResult?
+
+        prepare(treasury: auth(BorrowValue) &Account) {
+            log("🏦 Treasury-sponsored Plinko transaction")
+            log("Player address: ".concat(playerAddress.toString()))
+            log("Bet amount: ".concat(betAmount.toString()).concat(" FLOW"))
+            log("Risk level: ".concat(risk))
+            log("Rows: ".concat(rows.toString()))
+            log("Treasury address: ".concat(treasury.address.toString()))
+            
+            // Initialize gameResult to nil
+            self.gameResult = nil
+        }
+
+        execute {
+            self.gameResult = CasinoGames.playPlinko(
+                player: playerAddress,
+                betAmount: betAmount,
+                risk: risk,
+                rows: rows
+            )
+            
+            log("✅ Treasury-sponsored Plinko game completed!")
+            if let result = self.gameResult {
+                log("🎯 Final position: ".concat(result.result["finalPosition"] ?? "unknown"))
+                log("📊 Multiplier: ".concat(result.result["multiplier"] ?? "1.0"))
+                log("🔢 Random seed: ".concat(result.randomSeed.toString()))
+                log("💎 Payout: ".concat(result.payout.toString()).concat(" FLOW"))
+            }
+        }
+
+        post {
+            self.gameResult != nil: "Game result must be set"
+            self.gameResult!.gameType == "PLINKO": "Game type must be PLINKO"
+            self.gameResult!.player == playerAddress: "Player address must match"
+            self.gameResult!.betAmount == betAmount: "Bet amount must match"
+        }
+    }
   `
 };
 
@@ -132,16 +181,18 @@ export async function POST(request) {
     // Build transaction arguments based on game type
     let args;
     if (gameType.toLowerCase() === 'roulette') {
+      const betAmount = parseFloat(gameParams.betAmount || 0);
       args = (arg, t) => [
         arg(playerAddress, t.Address),
-        arg(gameParams.betAmount.toFixed(8), t.UFix64),
+        arg(betAmount.toFixed(8), t.UFix64),
         arg(gameParams.betType || 'multiple', t.String),
         arg(gameParams.betNumbers || [], t.Array(t.UInt8))
       ];
     } else if (gameType.toLowerCase() === 'mines') {
+      const betAmount = parseFloat(gameParams.betAmount || 0);
       args = (arg, t) => [
         arg(playerAddress, t.Address),
-        arg(gameParams.betAmount.toFixed(8), t.UFix64),
+        arg(betAmount.toFixed(8), t.UFix64),
         arg(gameParams.mineCount || 3, t.UInt8),
         arg(gameParams.revealedTiles || [], t.Array(t.UInt8)),
         arg(gameParams.cashOut || false, t.Bool)
@@ -159,10 +210,16 @@ export async function POST(request) {
     // Build Flow CLI command arguments - simplified format
     let flowArgs = '';
     if (gameType.toLowerCase() === 'roulette') {
-      flowArgs = `${playerAddress} ${gameParams.betAmount.toFixed(8)} "${gameParams.betType || 'multiple'}" "[]"`;
+      const betAmount = parseFloat(gameParams.betAmount || 0);
+      flowArgs = `${playerAddress} ${betAmount.toFixed(8)} "${gameParams.betType || 'multiple'}" "[]"`;
     } else if (gameType.toLowerCase() === 'mines') {
+      const betAmount = parseFloat(gameParams.betAmount || 0);
       const revealedTilesStr = gameParams.revealedTiles ? `[${gameParams.revealedTiles.join(',')}]` : '[]';
-      flowArgs = `${playerAddress} ${gameParams.betAmount.toFixed(8)} ${gameParams.mineCount || 3} "${revealedTilesStr}" ${gameParams.cashOut || false}`;
+      flowArgs = `${playerAddress} ${betAmount.toFixed(8)} ${gameParams.mineCount || 3} "${revealedTilesStr}" ${gameParams.cashOut || false}`;
+    } else if (gameType.toLowerCase() === 'plinko') {
+      const betAmount = parseFloat(gameParams.betAmount || 0);
+      const finalPosition = gameParams.finalPosition || 0; // Frontend-calculated position
+      flowArgs = `${playerAddress} ${betAmount.toFixed(8)} "${gameParams.risk || 'medium'}" ${gameParams.rows || 16} ${finalPosition}`;
     }
 
     // Use existing treasury transaction file instead of creating new one

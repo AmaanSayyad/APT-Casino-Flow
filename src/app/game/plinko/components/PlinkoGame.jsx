@@ -9,7 +9,7 @@ import { FaPlay, FaPause, FaRedo, FaCog, FaInfoCircle } from 'react-icons/fa';
 
 const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChange, betAmount = 0, onBetHistoryChange }, ref) => {
   const dispatch = useDispatch();
-  const { userBalance, userFlowBalance } = useSelector((state) => state.balance);
+  const { userFlowBalance } = useSelector((state) => state.balance);
   
   // Format balance for display (show 0 instead of 0.00000)
   const formatBalance = (balance) => {
@@ -494,19 +494,11 @@ const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChang
         console.log('Reward calculated:', reward, 'FLOW');
         console.log('==================');
         
-        // Add reward to current balance (bet amount already deducted when ball was spawned)
+        // Note: Balance updates are handled by treasury transaction, not here
         if (latestBetAmount > 0) {
-          console.log('Adding reward to balance:');
-          console.log('  Current balance from Redux:', userBalance);
-          console.log('  Current balance in FLOW:', parseFloat(userBalance));
-          console.log('  Reward to add:', reward);
-          
-          // Update Flow balance with reward
-          const currentFlowBalance = parseFloat(userFlowBalance);
-          const newFlowBalance = currentFlowBalance + reward;
-          dispatch(setFlowBalance(newFlowBalance.toString()));
-          
-          console.log('Reward added to balance via Redux');
+          console.log('Game completed - balance will be updated by treasury transaction');
+          console.log('  Current balance from Redux:', userFlowBalance);
+          console.log('  Reward calculated:', reward);
         }
         
         // Play bin land sound
@@ -523,7 +515,8 @@ const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChang
           timestamp: Date.now(),
           rows: currentRows,
           riskLevel: currentRiskLevel,
-          binIndex: binIndex
+          binIndex: binIndex,
+          finalPosition: binIndex  // Frontend-calculated position for Cadence
         };
         setBetHistory(prev => {
           const updated = [newBetResult, ...prev.slice(0, 99)]; // Keep last 100
@@ -596,14 +589,14 @@ const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChang
     setBallPosition(null);
     setHitPegs(new Set());
 
-    // Deduct bet amount when ball is spawned
+    // Deduct bet amount when ball is spawned (immediate feedback)
     if (latestBetAmount > 0) {
-      // Update Flow balance directly
       const newBalance = currentBalance - latestBetAmount;
       dispatch(setFlowBalance(newBalance.toString()));
-      console.log('Bet amount deduction:', { 
+      console.log('Bet amount deducted immediately:', { 
         currentBalance, 
         betAmount: latestBetAmount,
+        newBalance,
         betAmountProp: betAmount,
         betAmountRef: betAmountRef.current
       });
@@ -645,7 +638,7 @@ const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChang
     
     // Play drop sound
     playAudio(ballDropAudioRef);
-  }, [isDropping, currentRows, userBalance, dispatch]);
+  }, [isDropping, currentRows, userFlowBalance, dispatch]);
 
   // Expose functions to parent component
   useImperativeHandle(ref, () => ({

@@ -96,22 +96,23 @@ export default function GameHistory({ history }) {
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex flex-col gap-1">
-                    {game.vrfData ? (
+                    {(game.flowVRF || game.vrfData) ? (
                       <>
                         <div className="text-xs text-gray-300 font-mono">
                           <div className="text-green-400 font-bold">
-                            {game.vrfData.requestId ? `Request: ${game.vrfData.requestId.slice(0, 8)}...` : ''}
+                            {game.flowVRF?.transactionId ? `TX: ${game.flowVRF.transactionId.slice(0, 8)}...` : 
+                             game.vrfData?.requestId ? `Request: ${game.vrfData.requestId.slice(0, 8)}...` : ''}
                           </div>
-                          {game.vrfData.randomValue && (
+                          {(game.flowVRF?.randomSeed || game.vrfData?.randomValue) && (
                             <div className="text-blue-400">
-                              Random: {game.vrfData.randomValue.slice(0, 8)}...
+                              Random: {(game.flowVRF?.randomSeed || game.vrfData?.randomValue)?.toString().slice(0, 8)}...
                             </div>
                           )}
                         </div>
                         <div className="flex gap-1">
-                          {game.transactionHash && (
+                          {(game.flowVRF?.transactionId || game.transactionHash) && (
                             <button
-                              onClick={() => openFlowExplorer(game.transactionHash)}
+                              onClick={() => openFlowExplorer(game.flowVRF?.transactionId || game.transactionHash)}
                               className="flex items-center gap-1 px-2 py-1 bg-green-500/10 border border-green-500/30 rounded text-green-400 text-xs hover:bg-green-500/20 transition-colors"
                             >
                               <FaExternalLinkAlt size={8} />
