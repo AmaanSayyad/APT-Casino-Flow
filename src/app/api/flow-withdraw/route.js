@@ -1,17 +1,13 @@
 import { NextResponse } from 'next/server';
 import * as fcl from "@onflow/fcl";
+import { createTreasuryAuthService, initializeFCL } from '../../../services/FlowAuthService.js';
 
 // Flow Treasury configuration  
 const FLOW_TREASURY_PRIVATE_KEY = process.env.FLOW_TREASURY_PRIVATE_KEY
 const FLOW_TREASURY_ADDRESS = process.env.NEXT_PUBLIC_FLOW_TREASURY_ADDRESS
 
-// Configure FCL for server-side operations
-fcl.config({
-  "accessNode.api": "https://rest-testnet.onflow.org",
-  "discovery.wallet": "https://fcl-discovery.onflow.org/testnet/authn",
-  "0x7e60df042a9c0868": "0x7e60df042a9c0868", // FlowToken
-  "0x9a0766d93b6608b7": "0x9a0766d93b6608b7", // FungibleToken
-});
+// Initialize FCL for server-side operations
+initializeFCL();
 
 export async function POST(request) {
   try {
@@ -158,90 +154,25 @@ export async function POST(request) {
       }
     `;
 
-    // Execute real Flow transaction from treasury to user
+    // Execute real Flow transaction from treasury to user using FCL
     if (!FLOW_TREASURY_PRIVATE_KEY) {
       throw new Error('Treasury private key not configured');
     }
 
-    console.log('🔐 Executing Flow transaction from treasury...');
+    console.log('🔐 Executing Flow transaction from treasury using FCL...');
 
-    // Create authorization function for server-side signing
-    const authz = async (account) => {
-      return {
-        ...account,
-        addr: FLOW_TREASURY_ADDRESS,
-        keyId: 0,
-        signingFunction: async (signable) => {
-          // For now, we'll use a placeholder since proper signing requires crypto libraries
-          // In production, you'd implement proper ECDSA signing here
-          throw new Error('Server-side signing not yet implemented. Please use Flow CLI for now.');
-        }
-      };
-    };
+    // Create treasury authorization service
+    const treasuryAuth = createTreasuryAuthService();
 
-    // Use Flow CLI to execute the transaction
-    const { exec } = require('child_process');
-    const fs = require('fs');
-    const path = require('path');
+    // Prepare transaction arguments
+    const args = (arg, t) => [
+      arg(requestedAmount.toFixed(8), t.UFix64),
+      arg(formattedUserAddress, t.Address)
+    ];
 
-    // Create temporary transaction file
-    const txPath = path.join(process.cwd(), 'temp_withdraw.cdc');
-    fs.writeFileSync(txPath, cadence);
-
-    let transactionId;
-    let sealedTx;
-
-    try {
-      // Execute Flow CLI command
-      const command = `flow transactions send ${txPath} ${requestedAmount.toFixed(8)} ${formattedUserAddress} --signer treasury --network testnet`;
-
-      console.log('🔧 Executing Flow CLI command:', command);
-
-      const { stdout, stderr } = await new Promise((resolve, reject) => {
-        exec(command, { cwd: process.cwd() }, (error, stdout, stderr) => {
-          if (error) {
-            console.error('Flow CLI error:', error);
-            console.error('stderr:', stderr);
-            reject(new Error(`Flow CLI execution failed: ${error.message}`));
-            return;
-          }
-          resolve({ stdout, stderr });
-        });
-      });
-
-      console.log('Flow CLI stdout:', stdout);
-      if (stderr) console.log('Flow CLI stderr:', stderr);
-
-      // Parse transaction ID from stdout
-      const txIdMatch = stdout.match(/Transaction ID: ([a-f0-9]+)/);
-      if (!txIdMatch) {
-        throw new Error('Could not parse transaction ID from Flow CLI output');
-      }
-
-      transactionId = txIdMatch[1];
-      console.log('📝 Transaction submitted via Flow CLI:', transactionId);
-
-      // Wait for transaction to be sealed using FCL
-      console.log('⏳ Waiting for transaction to be sealed...');
-      sealedTx = await fcl.tx(transactionId).onceSealed();
-      console.log('✅ Transaction sealed:', sealedTx);
-
-      // Check transaction status
-      if (sealedTx.status !== 4) { // 4 = SEALED and successful
-        console.error('Transaction failed:', sealedTx);
-        throw new Error(`Transaction failed with status: ${sealedTx.status}. Error: ${sealedTx.errorMessage || 'Unknown error'}`);
-      }
-
-      // Clean up temp file
-      fs.unlinkSync(txPath);
-
-    } catch (cliError) {
-      // Clean up temp file on error
-      if (fs.existsSync(txPath)) {
-        fs.unlinkSync(txPath);
-      }
-      throw cliError;
-    }
+    // Execute transaction using FCL
+    const sealedTx = await treasuryAuth.executeTransaction(cadence, args, 1000);
+    const transactionId = sealedTx.transactionId;
 
     console.log(`✅ Flow withdrawal transaction completed: ${amount} FLOW to ${userAddress}, TX: ${transactionId}`);
 
@@ -253,7 +184,7 @@ export async function POST(request) {
       treasuryAddress: FLOW_TREASURY_ADDRESS,
       status: 'sealed',
       blockchain: 'flow',
-      message: 'Flow withdrawal completed successfully.',
+      message: 'Flow withdrawal completed successfully via FCL.',
       blockId: sealedTx.blockId,
       events: sealedTx.events
     });

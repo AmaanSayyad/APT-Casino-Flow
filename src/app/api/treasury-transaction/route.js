@@ -1,12 +1,12 @@
 // Treasury Transaction API Endpoint
 // Handles treasury-sponsored transactions server-side to avoid user wallet interaction
+// Now using FCL instead of Flow CLI for Vercel compatibility
 
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import fs from 'fs';
-import path from 'path';
+import { createTreasuryAuthService, initializeFCL } from '../../../services/FlowAuthService.js';
+import * as fcl from "@onflow/fcl";
 
-const execAsync = promisify(exec);
+// Initialize FCL for server-side operations
+initializeFCL();
 
 // Treasury configuration
 const TREASURY_CONFIG = {
@@ -33,6 +33,9 @@ const GAME_TRANSACTIONS = {
             log("🏦 Treasury sponsoring roulette game for player: ".concat(playerAddress.toString()))
             log("💰 Bet amount: ".concat(betAmount.toString()).concat(" FLOW"))
             log("🎯 Bet type: ".concat(betType))
+            
+            // Initialize gameResult to nil (Cadence 1.0 requirement)
+            self.gameResult = nil
         }
         
         execute {
@@ -73,6 +76,9 @@ const GAME_TRANSACTIONS = {
             log("🏦 Treasury sponsoring mines game for player: ".concat(playerAddress.toString()))
             log("💰 Bet amount: ".concat(betAmount.toString()).concat(" FLOW"))
             log("💣 Mine count: ".concat(mineCount.toString()))
+            
+            // Initialize gameResult to nil (Cadence 1.0 requirement)
+            self.gameResult = nil
         }
         
         execute {
@@ -103,7 +109,11 @@ const GAME_TRANSACTIONS = {
     transaction(
         playerAddress: Address,
         betAmount: UFix64,
-        segments: UInt8
+        segments: UInt8,
+        winningSegment: UInt8,
+        multiplier: UFix64,
+        wheelPosition: UFix64,
+        calculatedSegment: UInt8
     ) {
         var gameResult: CasinoGames.GameResult?
 
@@ -112,6 +122,10 @@ const GAME_TRANSACTIONS = {
             log("Player address: ".concat(playerAddress.toString()))
             log("Bet amount: ".concat(betAmount.toString()).concat(" FLOW"))
             log("Segments: ".concat(segments.toString()))
+            log("🎯 Frontend winning segment: ".concat(winningSegment.toString()))
+            log("🎯 Frontend multiplier: ".concat(multiplier.toString()))
+            log("🎯 Frontend wheel position: ".concat(wheelPosition.toString()))
+            log("🎯 Frontend calculated segment: ".concat(calculatedSegment.toString()))
             log("Treasury address: ".concat(treasury.address.toString()))
             
             // Initialize gameResult to nil
@@ -119,15 +133,24 @@ const GAME_TRANSACTIONS = {
         }
 
         execute {
-            self.gameResult = CasinoGames.playWheel(
+            self.gameResult = CasinoGames.playWheelWithFullData(
                 player: playerAddress,
                 betAmount: betAmount,
-                segments: segments
+                segments: segments,
+                frontendSegment: winningSegment,
+                frontendMultiplier: multiplier,
+                frontendWheelPosition: wheelPosition,
+                frontendCalculatedSegment: calculatedSegment
             )
             
             log("✅ Treasury-sponsored Wheel game completed!")
+            log("🎯 Frontend predicted segment: ".concat(winningSegment.toString()))
+            log("🎯 Frontend predicted multiplier: ".concat(multiplier.toString()))
+            log("🎯 Frontend wheel position: ".concat(wheelPosition.toString()))
+            log("🎯 Frontend calculated segment: ".concat(calculatedSegment.toString()))
             if let result = self.gameResult {
-                log("🎰 Winning segment: ".concat(result.result["winningSegment"] ?? "unknown"))
+                log("🎰 Actual winning segment: ".concat(result.result["winningSegment"] ?? "unknown"))
+                log("🎰 Actual multiplier: ".concat(result.result["multiplier"] ?? "unknown"))
                 log("🔢 Random seed: ".concat(result.randomSeed.toString()))
                 log("💎 Payout: ".concat(result.payout.toString()).concat(" FLOW"))
             }
@@ -149,7 +172,9 @@ const GAME_TRANSACTIONS = {
         playerAddress: Address,
         betAmount: UFix64,
         risk: String,
-        rows: UInt8
+        rows: UInt8,
+        finalPosition: UInt8,
+        multiplier: UFix64
     ) {
         var gameResult: CasinoGames.GameResult?
 
@@ -159,6 +184,8 @@ const GAME_TRANSACTIONS = {
             log("Bet amount: ".concat(betAmount.toString()).concat(" FLOW"))
             log("Risk level: ".concat(risk))
             log("Rows: ".concat(rows.toString()))
+            log("🎯 Frontend final position: ".concat(finalPosition.toString()))
+            log("🎯 Frontend multiplier: ".concat(multiplier.toString()))
             log("Treasury address: ".concat(treasury.address.toString()))
             
             // Initialize gameResult to nil
@@ -166,17 +193,21 @@ const GAME_TRANSACTIONS = {
         }
 
         execute {
-            self.gameResult = CasinoGames.playPlinko(
+            self.gameResult = CasinoGames.playPlinkoWithResult(
                 player: playerAddress,
                 betAmount: betAmount,
                 risk: risk,
-                rows: rows
+                rows: rows,
+                frontendPosition: finalPosition,
+                frontendMultiplier: multiplier
             )
             
             log("✅ Treasury-sponsored Plinko game completed!")
+            log("🎯 Frontend predicted position: ".concat(finalPosition.toString()))
+            log("🎯 Frontend predicted multiplier: ".concat(multiplier.toString()))
             if let result = self.gameResult {
-                log("🎯 Final position: ".concat(result.result["finalPosition"] ?? "unknown"))
-                log("📊 Multiplier: ".concat(result.result["multiplier"] ?? "1.0"))
+                log("🎰 Actual final position: ".concat(result.result["finalPosition"] ?? "unknown"))
+                log("🎰 Actual multiplier: ".concat(result.result["multiplier"] ?? "unknown"))
                 log("🔢 Random seed: ".concat(result.randomSeed.toString()))
                 log("💎 Payout: ".concat(result.payout.toString()).concat(" FLOW"))
             }
@@ -238,141 +269,62 @@ export async function POST(request) {
       args = (arg, t) => [
         arg(playerAddress, t.Address),
         arg(betAmount.toFixed(8), t.UFix64),
-        arg(gameParams.mineCount || 3, t.UInt8),
+        arg((gameParams.mineCount || 3).toString(), t.UInt8),
         arg(gameParams.revealedTiles || [], t.Array(t.UInt8)),
         arg(gameParams.cashOut || false, t.Bool)
       ];
-    } else if (gameType.toLowerCase() === 'wheel') {
+    } else if (gameType.toLowerCase() === 'plinko') {
       const betAmount = parseFloat(gameParams.betAmount || 0);
+      const multiplier = parseFloat(gameParams.multiplier || 1.0);
       args = (arg, t) => [
         arg(playerAddress, t.Address),
         arg(betAmount.toFixed(8), t.UFix64),
-        arg(gameParams.segments || 10, t.UInt8)
+        arg(gameParams.risk || 'medium', t.String),
+        arg((gameParams.rows || 16).toString(), t.UInt8),
+        arg((gameParams.finalPosition || 0).toString(), t.UInt8),
+        arg(multiplier.toFixed(8), t.UFix64)
+      ];
+    } else if (gameType.toLowerCase() === 'wheel') {
+      const betAmount = parseFloat(gameParams.betAmount || 0);
+      const multiplier = parseFloat(gameParams.multiplier || 0);
+      const wheelPosition = parseFloat(gameParams.wheelPosition || 0);
+      args = (arg, t) => [
+        arg(playerAddress, t.Address),
+        arg(betAmount.toFixed(8), t.UFix64),
+        arg((gameParams.segments || 10).toString(), t.UInt8),
+        arg((gameParams.winningSegment || 0).toString(), t.UInt8),
+        arg(multiplier.toFixed(8), t.UFix64),
+        arg(wheelPosition.toFixed(8), t.UFix64),
+        arg((gameParams.calculatedSegment || 0).toString(), t.UInt8)
       ];
     }
 
-    // No temporary files needed - using existing transaction files
-
-    // Build Flow CLI command arguments - simplified format
-    let flowArgs = '';
-    if (gameType.toLowerCase() === 'roulette') {
-      const betAmount = parseFloat(gameParams.betAmount || 0);
-      flowArgs = `${playerAddress} ${betAmount.toFixed(8)} "${gameParams.betType || 'multiple'}" "[]"`;
-    } else if (gameType.toLowerCase() === 'mines') {
-      const betAmount = parseFloat(gameParams.betAmount || 0);
-      const revealedTilesStr = gameParams.revealedTiles ? `[${gameParams.revealedTiles.join(',')}]` : '[]';
-      flowArgs = `${playerAddress} ${betAmount.toFixed(8)} ${gameParams.mineCount || 3} "${revealedTilesStr}" ${gameParams.cashOut || false}`;
-    } else if (gameType.toLowerCase() === 'plinko') {
-      const betAmount = parseFloat(gameParams.betAmount || 0);
-      const finalPosition = gameParams.finalPosition || 0; // Frontend-calculated position
-      flowArgs = `${playerAddress} ${betAmount.toFixed(8)} "${gameParams.risk || 'medium'}" ${gameParams.rows || 16} ${finalPosition}`;
-    } else if (gameType.toLowerCase() === 'wheel') {
-      const betAmount = parseFloat(gameParams.betAmount || 0);
-      flowArgs = `${playerAddress} ${betAmount.toFixed(8)} ${gameParams.segments || 10}`;
-    }
-
-    // Use existing treasury transaction file instead of creating new one
-    const existingTransactionFile = path.join(process.cwd(), 'cadence', 'transactions', `treasury_play_${gameType.toLowerCase()}.cdc`);
+    // Execute transaction using FCL instead of Flow CLI
+    console.log('🏦 Executing treasury transaction via FCL...');
     
-    if (!fs.existsSync(existingTransactionFile)) {
-      throw new Error(`Treasury transaction file not found: ${existingTransactionFile}`);
-    }
-
-    // Execute transaction using Flow CLI
-    console.log('🏦 Executing treasury transaction via Flow CLI...');
+    // Create treasury authorization service
+    const treasuryAuth = createTreasuryAuthService();
     
-    const flowCommand = `flow transactions send ${existingTransactionFile} ${flowArgs} --network testnet --signer treasury`;
-    console.log('📝 Flow command:', flowCommand);
-    
-    const { stdout, stderr } = await execAsync(flowCommand, {
-      cwd: process.cwd()
-    });
+    // Execute the transaction using FCL
+    const sealedTx = await treasuryAuth.executeTransaction(cadence, args, 1000);
+    const transactionId = sealedTx.transactionId;
 
-    if (stderr && !stderr.includes('Transaction ID:')) {
-      throw new Error(`Flow CLI error: ${stderr}`);
-    }
-
-    // Extract transaction ID from output
-    const transactionIdMatch = stdout.match(/Transaction ID: ([a-f0-9]+)/);
-    const transactionId = transactionIdMatch ? transactionIdMatch[1] : null;
-
-    if (!transactionId) {
-      throw new Error('Could not extract transaction ID from Flow CLI output');
-    }
-
-    console.log('✅ Treasury transaction submitted:', transactionId);
-
-    // Wait for transaction to be sealed and get events using Flow CLI
-    const sealCommand = `flow transactions get ${transactionId} --network testnet --sealed`;
-    const { stdout: sealOutput } = await execAsync(sealCommand, {
-      cwd: process.cwd()
-    });
-
-    console.log('📊 Transaction details:', sealOutput);
-
-    // Parse events from Flow CLI output
-    let events = [];
-    let blockId = 'unknown';
-    
-    try {
-      // Extract events from CLI output
-      const eventMatches = sealOutput.match(/Events:\s*(.*?)(?:\n\n|\nCode|$)/s);
-      if (eventMatches) {
-        const eventsSection = eventMatches[1];
-        
-        // Look for GamePlayed event
-        const gamePlayedMatch = eventsSection.match(/Type\s+A\.2083a55fb16f8f60\.CasinoGames\.GamePlayed[\s\S]*?Values\s*([\s\S]*?)(?=\n\n|\nCode|$)/);
-        if (gamePlayedMatch) {
-          const valuesSection = gamePlayedMatch[1];
-          
-          // Parse game result values - updated regex for Flow CLI format
-          const gameResultMatch = valuesSection.match(/- gameResult \(\{String:String\}\): (.+)/);
-          if (gameResultMatch) {
-            try {
-              // Parse the game result JSON string
-              const gameResultStr = gameResultMatch[1].trim();
-              console.log('🔍 Raw game result string:', gameResultStr);
-              
-              const gameResultData = JSON.parse(gameResultStr);
-              console.log('✅ Parsed game result data:', gameResultData);
-              
-              events.push({
-                type: 'A.2083a55fb16f8f60.CasinoGames.GamePlayed',
-                data: {
-                  gameResult: gameResultData
-                }
-              });
-            } catch (parseError) {
-              console.warn('Failed to parse game result:', parseError);
-              console.warn('Raw string was:', gameResultMatch[1]);
-            }
-          } else {
-            console.warn('Could not find gameResult in values section:', valuesSection);
-          }
-        }
-      }
-
-      // Extract block ID
-      const blockIdMatch = sealOutput.match(/Block ID\s+([a-f0-9]+)/);
-      if (blockIdMatch) {
-        blockId = blockIdMatch[1];
-      }
-    } catch (parseError) {
-      console.warn('Failed to parse transaction details:', parseError);
-    }
-
-    // No temporary file to clean up since we're using existing files
+    console.log('✅ Treasury transaction sealed via FCL:', transactionId);
 
     // Parse transaction result
     const transaction = {
       id: transactionId,
       status: 'SEALED',
-      events: events,
-      blockId: blockId,
+      events: sealedTx.events || [],
+      blockId: sealedTx.blockId || 'unknown',
       timestamp: Date.now()
     };
 
-    console.log('✅ Treasury transaction sealed:', transaction);
+    console.log('📊 Transaction details:', {
+      id: transactionId,
+      eventsCount: transaction.events.length,
+      blockId: transaction.blockId
+    });
 
     // Return transaction result
     return new Response(JSON.stringify({
@@ -381,7 +333,8 @@ export async function POST(request) {
       transaction: {
         ...transaction,
         id: transactionId,
-        treasurySponsored: true
+        treasurySponsored: true,
+        executedViaFCL: true
       }
     }), {
       status: 200,

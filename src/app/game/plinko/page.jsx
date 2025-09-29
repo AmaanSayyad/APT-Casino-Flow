@@ -262,7 +262,8 @@ export default function Plinko() {
         betAmount: newBetResult.betAmount,
         risk: currentRiskLevel.toLowerCase(),
         rows: currentRows,
-        finalPosition: newBetResult.finalPosition || 0  // Pass frontend-calculated position
+        finalPosition: newBetResult.finalPosition || 0,  // Pass frontend-calculated position
+        multiplier: newBetResult.multiplierValue || 1.0  // Pass frontend-calculated multiplier
       });
       
       console.log('🎲 Plinko treasury transaction completed:', transactionResult);

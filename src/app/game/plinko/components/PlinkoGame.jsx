@@ -511,6 +511,7 @@ const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChang
           title: new Date().toLocaleTimeString(),
           betAmount: formatBalance(latestBetAmount),
           multiplier: multipliers[binIndex],
+          multiplierValue: multiplierValue, // Add numerical multiplier value
           payout: formatBalance(reward),
           timestamp: Date.now(),
           rows: currentRows,

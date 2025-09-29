@@ -45,6 +45,18 @@ export default function Home() {
   const [showStats, setShowStats] = useState(false);
   const [detectedColor, setDetectedColor] = useState(null);
   const [detectedMultiplier, setDetectedMultiplier] = useState(null);
+  const [winningSegmentIndex, setWinningSegmentIndex] = useState(0);
+  const [winningMultiplier, setWinningMultiplier] = useState(0);
+  const [finalWheelPosition, setFinalWheelPosition] = useState(0);
+  const [calculatedSegment, setCalculatedSegment] = useState(0);
+  
+  // Store the latest wheel data for immediate use
+  const latestWheelDataRef = useRef({
+    segmentIndex: 0,
+    multiplier: 0,
+    wheelPosition: 0,
+    calculatedSegment: 0
+  });
   
   const dispatch = useDispatch();
   const { userBalance, userFlowBalance, isLoading: isLoadingBalance } = useSelector((state) => state.balance);
@@ -64,6 +76,18 @@ export default function Home() {
   
   // Use ref to prevent infinite loop in useEffect
   const isInitialized = useRef(false);
+  
+  // Reset wheel data ref when starting new spin
+  const resetWheelData = () => {
+    latestWheelDataRef.current = {
+      segmentIndex: 0,
+      multiplier: 0,
+      wheelPosition: 0,
+      calculatedSegment: 0,
+      source: 'initial'
+    };
+    console.log('🎯 Reset wheel data ref for new spin');
+  };
   
   // Load balance from localStorage on component mount
   useEffect(() => {
@@ -93,6 +117,9 @@ export default function Home() {
   // Game modes
   const manulBet = async () => {
     if (betAmount < 1 || isSpinning) return;
+    
+    // Reset wheel data for fresh spin
+    resetWheelData();
 
     // Check if wallet is connected first
     console.log('🔌 Wheel Bet - Wallet Status:', { isConnected, userFlowBalance });
@@ -102,14 +129,30 @@ export default function Home() {
     }
 
     // Generate Flow VRF in background for provably fair proof
-  const generateVRFInBackground = async (historyItemId) => {
+  const generateVRFInBackground = async (historyItemId, winningSegment = 0, multiplier = 0, wheelPos = 0, calcSegment = 0) => {
     try {
       console.log('🏦 Executing treasury-sponsored Wheel transaction...');
-      
-      const transactionResult = await executeTreasuryTransaction('wheel', {
-        betAmount: betAmount,
-        segments: noOfSegments
+      console.log('🎯 Parameters received by generateVRFInBackground:', {
+        winningSegment,
+        multiplier,
+        wheelPos,
+        calcSegment,
+        betAmount,
+        noOfSegments
       });
+      
+      const transactionParams = {
+        betAmount: betAmount,
+        segments: noOfSegments,
+        winningSegment: winningSegment,
+        multiplier: multiplier,
+        wheelPosition: wheelPos,
+        calculatedSegment: calcSegment
+      };
+      
+      console.log('🎯 Transaction parameters being sent:', transactionParams);
+      
+      const transactionResult = await executeTreasuryTransaction('wheel', transactionParams);
       
       console.log('✅ Flow Transaction: Background transaction completed successfully');
       console.log('🔗 Transaction:', transactionResult.id);
@@ -267,7 +310,17 @@ export default function Home() {
           }
 
           // Generate Flow VRF in background for provably fair proof
-          generateVRFInBackground(newHistoryItem.id).catch(error => {
+          const wheelData = latestWheelDataRef.current;
+          console.log('🎯 Calling generateVRFInBackground with FINAL ref values:', wheelData);
+          console.log('🎯 Using ColorDetector multiplier:', wheelData.multiplier, 'Source:', wheelData.source);
+          
+          generateVRFInBackground(
+            newHistoryItem.id, 
+            wheelData.segmentIndex, 
+            wheelData.multiplier,  // This MUST be from ColorDetector
+            wheelData.wheelPosition, 
+            wheelData.calculatedSegment
+          ).catch(error => {
             console.error('❌ Background entropy generation failed:', error);
           });
           
@@ -684,8 +737,50 @@ export default function Home() {
               onColorDetected={({ color, multiplier }) => {
                 setDetectedColor(color);
                 setDetectedMultiplier(multiplier);
-                console.log('🎯 Color detected from GameWheel:', color, 'Multiplier:', multiplier);
+                console.log('🎯 ColorDetector: REAL multiplier detected:', multiplier, 'Color:', color);
+                
+                // Update ref with detected multiplier (this is the REAL one for transaction!)
+                if (multiplier !== null && multiplier !== undefined) {
+                  // Calculate current position and segment based on wheelPosition
+                  const currentWheelPos = wheelPosition % (Math.PI * 2);
+                  const segmentAngle = (Math.PI * 2) / noOfSegments;
+                  const offsetPosition = (currentWheelPos + Math.PI/2 + Math.PI) % (Math.PI * 2);
+                  const currentSegmentIndex = Math.floor(offsetPosition / segmentAngle) % noOfSegments;
+                  
+                  latestWheelDataRef.current = {
+                    segmentIndex: currentSegmentIndex,
+                    multiplier: multiplier, // REAL multiplier from ColorDetector
+                    wheelPosition: currentWheelPos,
+                    calculatedSegment: currentSegmentIndex,
+                    detectedColor: color,
+                    source: 'colorDetector'
+                  };
+                  console.log('🎯 FINAL ref updated with ColorDetector data:', latestWheelDataRef.current);
+                }
               }}
+        onWinningSegment={(result) => {
+          console.log('🎯 Page: Received initial data from GameWheel:', result);
+          
+          // Only update ref if ColorDetector hasn't provided data yet
+          if (latestWheelDataRef.current.source !== 'colorDetector') {
+            latestWheelDataRef.current = {
+              segmentIndex: result.segmentIndex,
+              multiplier: result.multiplier,
+              wheelPosition: result.wheelPosition,
+              calculatedSegment: result.calculatedSegment,
+              source: result.source || 'gameWheel'
+            };
+            console.log('🎯 Page: Initial data stored in ref (will be overridden by ColorDetector):', latestWheelDataRef.current);
+          } else {
+            console.log('🎯 Page: Ignoring GameWheel data, ColorDetector data already available');
+          }
+          
+          // Update state for UI
+          setWinningSegmentIndex(result.segmentIndex);
+          setWinningMultiplier(result.multiplier);
+          setFinalWheelPosition(result.wheelPosition);
+          setCalculatedSegment(result.calculatedSegment);
+        }}
             />
           </div>
           <div className="w-full lg:w-1/3">
