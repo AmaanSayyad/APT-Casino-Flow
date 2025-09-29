@@ -326,7 +326,7 @@ export default function Home() {
           
           // Clean up callback
           window.wheelBetCallback = null;
-        }, 300); // Wait for color detection to update
+        }, 50); // Faster transaction execution
       };
       
     } catch (e) {
