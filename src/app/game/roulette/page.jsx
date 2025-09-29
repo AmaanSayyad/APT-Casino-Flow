@@ -785,11 +785,12 @@ const RouletteWheel = ({ spinning, result, onSpinComplete, onSpinStart, onWin, i
       setRotation(finalRotation);
       if (onSpinStart) onSpinStart();
 
+      // VRF handles the timing, show result immediately after animation starts
       setTimeout(() => {
         setSpinComplete(true);
         if (onSpinComplete) onSpinComplete();
         if (onWin) onWin();
-      }, 4200); // Slightly longer than animation
+      }, 100); // Minimal delay, VRF timing is the real wait
     } else if (!spinning) {
       setRotation(0);
       setSpinComplete(false);
@@ -821,7 +822,7 @@ const RouletteWheel = ({ spinning, result, onSpinComplete, onSpinStart, onWin, i
           transformOrigin: 'center',
           position: 'relative',
           transform: `rotate(${rotation}deg)`,
-          transition: spinning ? 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)' : 'none'
+          transition: spinning ? 'transform 0.3s ease-out' : 'none'
         }}
       />
       {spinComplete && (
@@ -2177,11 +2178,11 @@ export default function GameRoulette() {
           // Show error notification
           notification.error(`Transaction failed, using fallback random number: ${fallbackNumber}`);
         }).finally(() => {
-      // Re-enable betting after animation
+      // Re-enable betting - VRF timing handles the real delay
       setTimeout(() => {
         setSubmitDisabled(false);
         setWheelSpinning(false);
-      }, 4000); // Wait 4 seconds for wheel animation
+      }, 500); // Minimal delay, VRF provides the real timing
         });
 
         // Betting history and notifications will be updated inside the transaction promise
