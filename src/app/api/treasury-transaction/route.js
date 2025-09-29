@@ -4,6 +4,7 @@
 
 import { createTreasuryAuthService, initializeFCL } from '../../../services/FlowAuthService.js';
 import * as fcl from "@onflow/fcl";
+import * as t from "@onflow/types";
 
 // Initialize FCL for server-side operations
 initializeFCL();
@@ -254,48 +255,48 @@ export async function POST(request) {
       });
     }
 
-    // Build transaction arguments based on game type
+    // Build transaction arguments based on game type using imported types
     let args;
     if (gameType.toLowerCase() === 'roulette') {
       const betAmount = parseFloat(gameParams.betAmount || 0);
-      args = (arg, t) => [
-        arg(playerAddress, t.Address),
-        arg(betAmount.toFixed(8), t.UFix64),
-        arg(gameParams.betType || 'multiple', t.String),
-        arg(gameParams.betNumbers || [], t.Array(t.UInt8))
+      args = [
+        fcl.arg(playerAddress, t.Address),
+        fcl.arg(betAmount.toFixed(8), t.UFix64),
+        fcl.arg(gameParams.betType || 'multiple', t.String),
+        fcl.arg(gameParams.betNumbers || [], t.Array(t.UInt8))
       ];
     } else if (gameType.toLowerCase() === 'mines') {
       const betAmount = parseFloat(gameParams.betAmount || 0);
-      args = (arg, t) => [
-        arg(playerAddress, t.Address),
-        arg(betAmount.toFixed(8), t.UFix64),
-        arg((gameParams.mineCount || 3).toString(), t.UInt8),
-        arg(gameParams.revealedTiles || [], t.Array(t.UInt8)),
-        arg(gameParams.cashOut || false, t.Bool)
+      args = [
+        fcl.arg(playerAddress, t.Address),
+        fcl.arg(betAmount.toFixed(8), t.UFix64),
+        fcl.arg((gameParams.mineCount || 3).toString(), t.UInt8),
+        fcl.arg(gameParams.revealedTiles || [], t.Array(t.UInt8)),
+        fcl.arg(gameParams.cashOut || false, t.Bool)
       ];
     } else if (gameType.toLowerCase() === 'plinko') {
       const betAmount = parseFloat(gameParams.betAmount || 0);
       const multiplier = parseFloat(gameParams.multiplier || 1.0);
-      args = (arg, t) => [
-        arg(playerAddress, t.Address),
-        arg(betAmount.toFixed(8), t.UFix64),
-        arg(gameParams.risk || 'medium', t.String),
-        arg((gameParams.rows || 16).toString(), t.UInt8),
-        arg((gameParams.finalPosition || 0).toString(), t.UInt8),
-        arg(multiplier.toFixed(8), t.UFix64)
+      args = [
+        fcl.arg(playerAddress, t.Address),
+        fcl.arg(betAmount.toFixed(8), t.UFix64),
+        fcl.arg(gameParams.risk || 'medium', t.String),
+        fcl.arg((gameParams.rows || 16).toString(), t.UInt8),
+        fcl.arg((gameParams.finalPosition || 0).toString(), t.UInt8),
+        fcl.arg(multiplier.toFixed(8), t.UFix64)
       ];
     } else if (gameType.toLowerCase() === 'wheel') {
       const betAmount = parseFloat(gameParams.betAmount || 0);
       const multiplier = parseFloat(gameParams.multiplier || 0);
       const wheelPosition = parseFloat(gameParams.wheelPosition || 0);
-      args = (arg, t) => [
-        arg(playerAddress, t.Address),
-        arg(betAmount.toFixed(8), t.UFix64),
-        arg((gameParams.segments || 10).toString(), t.UInt8),
-        arg((gameParams.winningSegment || 0).toString(), t.UInt8),
-        arg(multiplier.toFixed(8), t.UFix64),
-        arg(wheelPosition.toFixed(8), t.UFix64),
-        arg((gameParams.calculatedSegment || 0).toString(), t.UInt8)
+      args = [
+        fcl.arg(playerAddress, t.Address),
+        fcl.arg(betAmount.toFixed(8), t.UFix64),
+        fcl.arg((gameParams.segments || 10).toString(), t.UInt8),
+        fcl.arg((gameParams.winningSegment || 0).toString(), t.UInt8),
+        fcl.arg(multiplier.toFixed(8), t.UFix64),
+        fcl.arg(wheelPosition.toFixed(8), t.UFix64),
+        fcl.arg((gameParams.calculatedSegment || 0).toString(), t.UInt8)
       ];
     }
 
