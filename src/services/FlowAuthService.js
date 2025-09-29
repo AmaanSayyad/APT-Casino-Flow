@@ -100,6 +100,8 @@ export class FlowAuthService {
     try {
       console.log('🚀 Executing Flow transaction via FCL...');
       console.log('📝 Transaction cadence preview:', cadence.substring(0, 100) + '...');
+      console.log('📝 Args type:', typeof args);
+      console.log('📝 Args function check:', typeof args === 'function');
       
       const authz = this.createAuthz();
       

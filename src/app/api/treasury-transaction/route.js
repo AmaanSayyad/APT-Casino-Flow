@@ -4,7 +4,6 @@
 
 import { createTreasuryAuthService, initializeFCL } from '../../../services/FlowAuthService.js';
 import * as fcl from "@onflow/fcl";
-import * as t from "@onflow/types";
 
 // Initialize FCL for server-side operations
 initializeFCL();
@@ -255,58 +254,83 @@ export async function POST(request) {
       });
     }
 
-    // Build transaction arguments based on game type using imported types
+    // Build transaction arguments based on game type using FCL function format
     let args;
     if (gameType.toLowerCase() === 'roulette') {
       const betAmount = parseFloat(gameParams.betAmount || 0);
-      args = [
-        fcl.arg(playerAddress, t.Address),
-        fcl.arg(betAmount.toFixed(8), t.UFix64),
-        fcl.arg(gameParams.betType || 'multiple', t.String),
-        fcl.arg(gameParams.betNumbers || [], t.Array(t.UInt8))
+      args = (arg, t) => [
+        arg(playerAddress, t.Address),
+        arg(betAmount.toFixed(8), t.UFix64),
+        arg(gameParams.betType || 'multiple', t.String),
+        arg(gameParams.betNumbers || [], t.Array(t.UInt8))
       ];
     } else if (gameType.toLowerCase() === 'mines') {
       const betAmount = parseFloat(gameParams.betAmount || 0);
-      args = [
-        fcl.arg(playerAddress, t.Address),
-        fcl.arg(betAmount.toFixed(8), t.UFix64),
-        fcl.arg((gameParams.mineCount || 3).toString(), t.UInt8),
-        fcl.arg(gameParams.revealedTiles || [], t.Array(t.UInt8)),
-        fcl.arg(gameParams.cashOut || false, t.Bool)
+      args = (arg, t) => [
+        arg(playerAddress, t.Address),
+        arg(betAmount.toFixed(8), t.UFix64),
+        arg((gameParams.mineCount || 3).toString(), t.UInt8),
+        arg(gameParams.revealedTiles || [], t.Array(t.UInt8)),
+        arg(gameParams.cashOut || false, t.Bool)
       ];
     } else if (gameType.toLowerCase() === 'plinko') {
       const betAmount = parseFloat(gameParams.betAmount || 0);
       const multiplier = parseFloat(gameParams.multiplier || 1.0);
-      args = [
-        fcl.arg(playerAddress, t.Address),
-        fcl.arg(betAmount.toFixed(8), t.UFix64),
-        fcl.arg(gameParams.risk || 'medium', t.String),
-        fcl.arg((gameParams.rows || 16).toString(), t.UInt8),
-        fcl.arg((gameParams.finalPosition || 0).toString(), t.UInt8),
-        fcl.arg(multiplier.toFixed(8), t.UFix64)
+      console.log('🎯 Plinko args debug:', {
+        playerAddress,
+        betAmount,
+        risk: gameParams.risk || 'medium',
+        rows: gameParams.rows || 16,
+        finalPosition: gameParams.finalPosition || 0,
+        multiplier
+      });
+      args = (arg, t) => [
+        arg(playerAddress, t.Address),
+        arg(betAmount.toFixed(8), t.UFix64),
+        arg(gameParams.risk || 'medium', t.String),
+        arg((gameParams.rows || 16).toString(), t.UInt8),
+        arg((gameParams.finalPosition || 0).toString(), t.UInt8),
+        arg(multiplier.toFixed(8), t.UFix64)
       ];
     } else if (gameType.toLowerCase() === 'wheel') {
       const betAmount = parseFloat(gameParams.betAmount || 0);
       const multiplier = parseFloat(gameParams.multiplier || 0);
       const wheelPosition = parseFloat(gameParams.wheelPosition || 0);
-      args = [
-        fcl.arg(playerAddress, t.Address),
-        fcl.arg(betAmount.toFixed(8), t.UFix64),
-        fcl.arg((gameParams.segments || 10).toString(), t.UInt8),
-        fcl.arg((gameParams.winningSegment || 0).toString(), t.UInt8),
-        fcl.arg(multiplier.toFixed(8), t.UFix64),
-        fcl.arg(wheelPosition.toFixed(8), t.UFix64),
-        fcl.arg((gameParams.calculatedSegment || 0).toString(), t.UInt8)
+      args = (arg, t) => [
+        arg(playerAddress, t.Address),
+        arg(betAmount.toFixed(8), t.UFix64),
+        arg((gameParams.segments || 10).toString(), t.UInt8),
+        arg((gameParams.winningSegment || 0).toString(), t.UInt8),
+        arg(multiplier.toFixed(8), t.UFix64),
+        arg(wheelPosition.toFixed(8), t.UFix64),
+        arg((gameParams.calculatedSegment || 0).toString(), t.UInt8)
       ];
     }
 
     // Execute transaction using FCL instead of Flow CLI
     console.log('🏦 Executing treasury transaction via FCL...');
+    console.log('🔍 Game type:', gameType);
+    console.log('🔍 Args type:', typeof args);
+    console.log('🔍 Args function check:', typeof args === 'function');
+    
+    // Test if args function works by calling it directly
+    if (typeof args === 'function') {
+      console.log('🧪 Testing args function with mock parameters...');
+      try {
+        const mockArg = (value, type) => ({ value, type: type.toString() });
+        const mockT = { Address: 'Address', UFix64: 'UFix64', String: 'String', UInt8: 'UInt8', Bool: 'Bool', Array: (t) => `Array(${t})` };
+        const testResult = args(mockArg, mockT);
+        console.log('🧪 Args function test result:', testResult);
+      } catch (error) {
+        console.error('🧪 Args function test failed:', error);
+      }
+    }
     
     // Create treasury authorization service
     const treasuryAuth = createTreasuryAuthService();
     
-    // Execute the transaction using FCL
+    // Execute transaction using FlowAuthService (same as working flow-withdraw)
+    console.log('🚀 Executing Flow transaction via FlowAuthService...');
     const sealedTx = await treasuryAuth.executeTransaction(cadence, args, 1000);
     const transactionId = sealedTx.transactionId;
 
