@@ -2,14 +2,14 @@
 import { useState, forwardRef, useImperativeHandle, useCallback, useEffect, useRef } from "react";
 import Matter from 'matter-js';
 import { useSelector, useDispatch } from 'react-redux';
-import { setBalance, addToBalance, subtractFromBalance } from '@/store/balanceSlice';
+import { setBalance, setFlowBalance, addToBalance, subtractFromBalance } from '@/store/balanceSlice';
 import { flowVRFService } from '@/services/FlowVRFService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaPlay, FaPause, FaRedo, FaCog, FaInfoCircle } from 'react-icons/fa';
 
 const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChange, betAmount = 0, onBetHistoryChange }, ref) => {
   const dispatch = useDispatch();
-  const userBalance = useSelector((state) => state.balance.userBalance);
+  const { userBalance, userFlowBalance } = useSelector((state) => state.balance);
   
   // Format balance for display (show 0 instead of 0.00000)
   const formatBalance = (balance) => {
@@ -501,8 +501,10 @@ const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChang
           console.log('  Current balance in FLOW:', parseFloat(userBalance));
           console.log('  Reward to add:', reward);
           
-          // Use addToBalance to properly update Redux store
-          dispatch(addToBalance(reward));
+          // Update Flow balance with reward
+          const currentFlowBalance = parseFloat(userFlowBalance);
+          const newFlowBalance = currentFlowBalance + reward;
+          dispatch(setFlowBalance(newFlowBalance.toString()));
           
           console.log('Reward added to balance via Redux');
         }
@@ -577,11 +579,11 @@ const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChang
   const dropBall = useCallback(async () => {
     
     // Simple balance check - if user doesn't have enough balance, don't allow playing
-    const currentBalance = parseFloat(userBalance);
+    const currentBalance = parseFloat(userFlowBalance);
     const latestBetAmount = betAmountRef.current;
     
     if (latestBetAmount > currentBalance) {
-      console.warn('Insufficient balance for bet:', {
+      console.warn('Insufficient Flow balance for bet:', {
         currentBalance: currentBalance,
         betAmount: latestBetAmount,
         balanceInETH: formatBalance(currentBalance)
@@ -596,8 +598,9 @@ const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChang
 
     // Deduct bet amount when ball is spawned
     if (latestBetAmount > 0) {
-      // Use subtractFromBalance to properly update Redux store
-      dispatch(subtractFromBalance(latestBetAmount));
+      // Update Flow balance directly
+      const newBalance = currentBalance - latestBetAmount;
+      dispatch(setFlowBalance(newBalance.toString()));
       console.log('Bet amount deduction:', { 
         currentBalance, 
         betAmount: latestBetAmount,

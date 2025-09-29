@@ -12,7 +12,7 @@ import { FaHistory, FaTrophy, FaInfoCircle, FaChartLine, FaCoins, FaChevronDown,
 import { GiCardRandom, GiWheelbarrow, GiSpinningBlades, GiTrophyCup } from "react-icons/gi";
 import { HiOutlineTrendingUp, HiOutlineChartBar } from "react-icons/hi";
 import { useSelector, useDispatch } from 'react-redux';
-import { setBalance, setLoading, loadBalanceFromStorage } from '@/store/balanceSlice';
+import { setBalance, setFlowBalance, setLoading, loadBalanceFromStorage } from '@/store/balanceSlice';
 import { useNotification } from '@/components/NotificationSystem';
 import useWalletStatus from '@/hooks/useWalletStatus';
 // Flow VRF integration for randomness
@@ -47,7 +47,7 @@ export default function Home() {
   const [detectedMultiplier, setDetectedMultiplier] = useState(null);
   
   const dispatch = useDispatch();
-  const { userBalance, isLoading: isLoadingBalance } = useSelector((state) => state.balance);
+  const { userBalance, userFlowBalance, isLoading: isLoadingBalance } = useSelector((state) => state.balance);
   const notification = useNotification();
   const { isConnected } = useWalletStatus();
   
@@ -159,8 +159,8 @@ export default function Home() {
     }
   };
 
-    // Check Redux balance (balance is already in FLOW)
-    const currentBalance = parseFloat(userBalance || '0');
+    // Check Redux Flow balance (balance is already in FLOW)
+    const currentBalance = parseFloat(userFlowBalance || '0');
     
     if (currentBalance < betAmount) {
       alert(`Insufficient balance. You have ${formatBalance(currentBalance)} FLOW but need ${betAmount} FLOW`);
@@ -176,9 +176,9 @@ export default function Home() {
       console.log('Current balance (FLOW):', currentBalance);
       console.log('Sectors:', noOfSegments);
       
-      // Deduct bet amount from Redux balance
-      const newBalance = (parseFloat(userBalance || '0') - betAmount).toString();
-      dispatch(setBalance(newBalance));
+      // Deduct bet amount from Redux Flow balance
+      const newBalance = (parseFloat(userFlowBalance || '0') - betAmount).toString();
+      dispatch(setFlowBalance(newBalance));
       
       console.log('Balance deducted. New balance:', formatBalance(newBalance), 'FLOW');
       
@@ -246,8 +246,8 @@ export default function Home() {
           if (actualMultiplier > 0) {
             notification.success(`Congratulations! ${betAmount} FLOW × ${actualMultiplier.toFixed(2)} = ${formatBalance(winAmount)} FLOW won!`);
             
-            // Update balance with winnings
-            const currentBalance = parseFloat(userBalance || '0');
+            // Update Flow balance with winnings
+            const currentBalance = parseFloat(userFlowBalance || '0');
             const newBalanceWithWin = currentBalance + winAmount;
             
             console.log('💰 Adding winnings:', {
@@ -256,7 +256,7 @@ export default function Home() {
               newBalance: formatBalance(newBalanceWithWin)
             });
             
-            dispatch(setBalance(newBalanceWithWin.toString()));
+            dispatch(setFlowBalance(newBalanceWithWin.toString()));
           } else {
             notification.info(`Game over. Multiplier: ${actualMultiplier.toFixed(2)}x`);
           }
@@ -276,8 +276,8 @@ export default function Home() {
       alert(`Bet failed: ${e?.message || e}`);
       setIsSpinning(false);
       
-      // Refund the deducted balance on error
-      dispatch(setBalance(userBalance));
+      // Refund the deducted Flow balance on error
+      dispatch(setFlowBalance(userFlowBalance));
     }
   };
 
@@ -326,8 +326,8 @@ export default function Home() {
     let totalProfit = 0;
 
     for (let i = 0; i < numberOfBets; i++) {
-      // Check Redux balance before each bet
-      let currentBalance = parseFloat(userBalance || '0');
+      // Check Redux Flow balance before each bet
+      let currentBalance = parseFloat(userFlowBalance || '0');
       
       console.log(`💰 Auto bet ${i + 1} balance check:`, {
         currentBalance: formatBalance(currentBalance),
@@ -343,9 +343,9 @@ export default function Home() {
       setIsSpinning(true);
       setHasSpun(false);
       
-      // Deduct bet amount from Redux balance
-      const newBalance = (parseFloat(userBalance || '0') - currentBet).toString();
-      dispatch(setBalance(newBalance));
+      // Deduct bet amount from Redux Flow balance
+      const newBalance = (parseFloat(userFlowBalance || '0') - currentBet).toString();
+      dispatch(setFlowBalance(newBalance));
 
       // Calculate result position
       const resultPosition = Math.floor(Math.random() * noOfSegments);
@@ -419,9 +419,9 @@ export default function Home() {
       // Calculate win amount
       const winAmount = currentBet * actualMultiplier;
 
-      // Update Redux balance with winnings
+      // Update Redux Flow balance with winnings
       if (actualMultiplier > 0) {
-        const currentBalance = parseFloat(userBalance || '0');
+        const currentBalance = parseFloat(userFlowBalance || '0');
         const newBalanceWithWin = currentBalance + winAmount;
         
         console.log('💰 Auto bet winnings:', {
@@ -430,7 +430,7 @@ export default function Home() {
           newBalance: formatBalance(newBalanceWithWin)
         });
         
-        dispatch(setBalance(newBalanceWithWin.toString()));
+        dispatch(setFlowBalance(newBalanceWithWin.toString()));
       }
 
       // Update total profit
@@ -485,10 +485,10 @@ export default function Home() {
         currentBet = currentBet + (currentBet * lossIncrease);
       }
 
-      // Clamp bet to balance
-      currentBalance = parseFloat(userBalance || '0');
+      // Clamp bet to Flow balance
+      currentBalance = parseFloat(userFlowBalance || '0');
       if (currentBet > currentBalance) {
-        console.log(`💰 Bet amount ${formatBalance(currentBet)} exceeds balance ${formatBalance(currentBalance)}, clamping to balance`);
+        console.log(`💰 Bet amount ${formatBalance(currentBet)} exceeds Flow balance ${formatBalance(currentBalance)}, clamping to balance`);
         currentBet = currentBalance;
       }
       if (currentBet <= 0) currentBet = initialBetAmount;

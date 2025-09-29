@@ -10,7 +10,7 @@ import useWindowSize from 'react-use/lib/useWindowSize';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useDispatch, useSelector } from 'react-redux';
-import { setBalance } from '@/store/balanceSlice';
+import { setBalance, setFlowBalance } from '@/store/balanceSlice';
 import useWalletStatus from '@/hooks/useWalletStatus';
 
 const GRID_SIZES = {
@@ -40,7 +40,7 @@ const SOUNDS = {
 const Game = ({ betSettings = {}, onGameStatusChange, onGameComplete }) => {
   // Redux integration
   const dispatch = useDispatch();
-  const { userBalance } = useSelector((state) => state.balance);
+  const { userBalance, userFlowBalance } = useSelector((state) => state.balance);
   const { isConnected } = useWalletStatus();
 
   // Game Settings
@@ -336,8 +336,8 @@ const Game = ({ betSettings = {}, onGameStatusChange, onGameComplete }) => {
           return;
         }
         
-        // Check Redux balance (balance is already in FLOW)
-        const currentBalance = parseFloat(userBalance || '0');
+        // Check Redux Flow balance (balance is already in FLOW)
+        const currentBalance = parseFloat(userFlowBalance || '0');
         
         if (currentBalance < parseFloat(settings.betAmount)) {
           toast.error(`Insufficient balance. You have ${currentBalance.toFixed(5)} FLOW but need ${parseFloat(settings.betAmount).toFixed(5)} FLOW`);
@@ -345,9 +345,9 @@ const Game = ({ betSettings = {}, onGameStatusChange, onGameComplete }) => {
         }
 
         try {
-          // Deduct bet amount from Redux balance
-          const newBalance = (parseFloat(userBalance || '0') - parseFloat(settings.betAmount)).toString();
-          dispatch(setBalance(newBalance));
+          // Deduct bet amount from Redux Flow balance
+          const newBalance = (parseFloat(userFlowBalance || '0') - parseFloat(settings.betAmount)).toString();
+          dispatch(setFlowBalance(newBalance));
           
           console.log('=== STARTING MINES BET WITH REDUX BALANCE ===');
           console.log('Bet amount (FLOW):', settings.betAmount);
@@ -385,8 +385,8 @@ const Game = ({ betSettings = {}, onGameStatusChange, onGameComplete }) => {
           console.error('Error placing bet:', error);
           toast.error(`Bet placement failed: ${error.message}`);
           
-          // Refund the deducted balance on error
-          dispatch(setBalance(userBalance));
+          // Refund the deducted Flow balance on error
+          dispatch(setFlowBalance(userFlowBalance));
         }
       };
       
@@ -660,8 +660,8 @@ const Game = ({ betSettings = {}, onGameStatusChange, onGameComplete }) => {
               toast.success(`Cashed out: ${payout.toFixed(5)} FLOW (${multiplier.toFixed(2)}x)`);
       playSound('cashout');
       
-      // Update user balance in Redux store (add payout to current balance)
-      const currentBalance = parseFloat(userBalance || '0');
+      // Update user Flow balance in Redux store (add payout to current balance)
+      const currentBalance = parseFloat(userFlowBalance || '0');
       const newBalance = currentBalance + payout;
       
       console.log('Balance update:', {
@@ -670,7 +670,7 @@ const Game = ({ betSettings = {}, onGameStatusChange, onGameComplete }) => {
         newBalance: newBalance.toFixed(5)
       });
       
-      dispatch(setBalance(newBalance.toString()));
+      dispatch(setFlowBalance(newBalance.toString()));
       
       // Show confetti on any profitable cashout
       if (payout > 0) {

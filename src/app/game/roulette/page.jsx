@@ -33,7 +33,7 @@ import WinProbabilities from './components/WinProbabilities';
 import RouletteHistory from './components/RouletteHistory';
 // Removed wagmi import - using Flow wallet instead
 import { useSelector, useDispatch } from 'react-redux';
-import { setBalance, setLoading, loadBalanceFromStorage } from '@/store/balanceSlice';
+import { setBalance, setFlowBalance, setLoading, loadBalanceFromStorage } from '@/store/balanceSlice';
 // Flow VRF service imported below
 import { flowVRFService } from '@/services/FlowVRFService';
 import { useFlowWallet } from '@/hooks/useFlowWallet';
@@ -1615,8 +1615,8 @@ export default function GameRoulette() {
       return;
     }
 
-    // Check Redux balance instead of wallet
-    const currentBalance = parseFloat(userBalance || '0'); // Balance is already in FLOW
+    // Check Redux Flow balance instead of regular balance
+    const currentBalance = parseFloat(userFlowBalance || '0'); // Use Flow balance for Flow games
     const totalBetAmount = total;
 
     if (currentBalance < totalBetAmount) {
@@ -1637,10 +1637,10 @@ export default function GameRoulette() {
         remainingBalance: currentBalance - totalBetAmount
       });
 
-      // Store original balance for calculation
-      const originalBalance = parseFloat(userBalance || '0');
+      // Store original Flow balance for calculation
+      const originalBalance = parseFloat(userFlowBalance || '0');
 
-      // Check if user has enough balance
+      // Check if user has enough Flow balance
       if (originalBalance < totalBetAmount) {
         alert(`Insufficient balance. You have ${formatBalance(originalBalance)} FLOW but need ${formatBalance(totalBetAmount)} FLOW`);
         setSubmitDisabled(false);
@@ -1648,9 +1648,9 @@ export default function GameRoulette() {
         return;
       }
 
-      // Deduct bet amount immediately from balance
+      // Deduct bet amount immediately from Flow balance
       const balanceAfterBet = originalBalance - totalBetAmount;
-      dispatch(setBalance(formatBalance(balanceAfterBet)));
+      dispatch(setFlowBalance(formatBalance(balanceAfterBet)));
 
       console.log("Balance deducted:", {
         originalBalance: formatBalance(originalBalance),
@@ -1988,11 +1988,11 @@ export default function GameRoulette() {
           totalBetAmount
         });
 
-        // Update user balance with final result
+        // Update user Flow balance with final result
         // netResult = totalPayout (includes original bet since we already deducted it)
         // So we just add the total winnings to the balance after bet deduction
         const finalBalance = balanceAfterBet + netResult;
-        dispatch(setBalance(formatBalance(finalBalance)));
+        dispatch(setFlowBalance(formatBalance(finalBalance)));
 
         console.log("Balance update:", {
           originalBalance: formatBalance(originalBalance),

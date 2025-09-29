@@ -9,6 +9,8 @@ const FLOW_TREASURY_ADDRESS = process.env.NEXT_PUBLIC_FLOW_TREASURY_ADDRESS
 fcl.config({
   "accessNode.api": "https://rest-testnet.onflow.org",
   "discovery.wallet": "https://fcl-discovery.onflow.org/testnet/authn",
+  "0x7e60df042a9c0868": "0x7e60df042a9c0868", // FlowToken
+  "0x9a0766d93b6608b7": "0x9a0766d93b6608b7", // FungibleToken
 });
 
 export async function POST(request) {

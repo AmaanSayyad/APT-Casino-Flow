@@ -6,7 +6,7 @@ import useWalletStatus from '@/hooks/useWalletStatus';
 
 
 export default function GameControls({ onBet, onRowChange, onRiskLevelChange, onBetAmountChange, initialRows = 16, initialRiskLevel = "Medium" }) {
-  const userBalance = useSelector((state) => state.balance.userBalance);
+  const { userBalance, userFlowBalance } = useSelector((state) => state.balance);
   const { isConnected } = useWalletStatus();
   
   const [gameMode, setGameMode] = useState("manual");
@@ -116,7 +116,7 @@ export default function GameControls({ onBet, onRowChange, onRiskLevelChange, on
     }
     
     const betValue = parseFloat(betAmount);
-    const currentBalance = parseFloat(userBalance);
+    const currentBalance = parseFloat(userFlowBalance);
     
     console.log('handleBet called with betValue:', betValue, 'currentBalance (FLOW):', currentBalance);
     
@@ -167,9 +167,9 @@ export default function GameControls({ onBet, onRowChange, onRiskLevelChange, on
     let currentBet = 0;
     let localCurrentBet = 0; // Local variable for interval
     
-    // Check if we have enough balance for all bets
+    // Check if we have enough Flow balance for all bets
     const totalBetAmount = totalBets * parseFloat(betAmount);
-    const currentBalance = parseFloat(userBalance);
+    const currentBalance = parseFloat(userFlowBalance);
     
     console.log('Auto betting balance check:', {
       totalBets,
@@ -310,21 +310,21 @@ export default function GameControls({ onBet, onRowChange, onRiskLevelChange, on
     }
   };
 
-  // Check if user has sufficient balance for current bet
+  // Check if user has sufficient Flow balance for current bet
   const hasSufficientBalance = () => {
     if (!isConnected) return false;
     const betValue = parseFloat(betAmount);
-    const currentBalance = parseFloat(userBalance);
+    const currentBalance = parseFloat(userFlowBalance);
     return betValue <= currentBalance && betValue >= 1;
   };
 
-  // Check if user has sufficient balance for auto betting
+  // Check if user has sufficient Flow balance for auto betting
   const hasSufficientBalanceForAutoBet = () => {
     if (!isConnected) return false;
     const betValue = parseFloat(betAmount);
     const totalBets = parseInt(numberOfBets) || 1;
     const totalBetAmount = totalBets * betValue;
-    const currentBalance = parseFloat(userBalance);
+    const currentBalance = parseFloat(userFlowBalance);
     return totalBetAmount <= currentBalance && betValue >= 1;
   };
 
