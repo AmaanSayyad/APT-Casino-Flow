@@ -530,7 +530,7 @@ export default function Navbar() {
       const txId = transaction?.id || transaction?.transactionId || 'unknown';
       const shortTxId = typeof txId === 'string' && txId.length > 10 ? txId.slice(0, 10) + '...' : txId;
       
-      notification.success(`Flow işlemi başarılı! ID: ${shortTxId}`);
+      notification.success(`Flow transaction successful! ID: ${shortTxId}`);
       
       // After successful transaction, update local Flow balance
       const currentFlowBalance = parseFloat(userFlowBalance || '0');
@@ -569,18 +569,18 @@ export default function Navbar() {
     } catch (error) {
       console.error('Flow deposit error:', error);
       
-      // Provide user-friendly error messages in Turkish
+      // Provide user-friendly error messages in English
       let errorMessage = error.message;
       if (error.message.includes('network') || error.message.includes('connection')) {
-        errorMessage = 'Ağ bağlantısı hatası. Lütfen internet bağlantınızı kontrol edin ve tekrar deneyin.';
+        errorMessage = 'Network connection error. Please check your internet connection and try again.';
       } else if (error.message.includes('insufficient') || error.message.includes('Yetersiz')) {
-        errorMessage = error.message; // Already in Turkish
+        errorMessage = 'Insufficient balance. Please check your balance and try again.';
       } else if (error.message.includes('transaction')) {
-        errorMessage = 'İşlem başarısız oldu. Lütfen cüzdanınızı kontrol edin ve tekrar deneyin.';
+        errorMessage = 'Transaction failed. Please check your wallet and try again.';
       } else if (error.message.includes('timeout')) {
-        errorMessage = 'İşlem zaman aşımına uğradı. Lütfen tekrar deneyin.';
+        errorMessage = 'Transaction timed out. Please try again.';
       } else {
-        errorMessage = `Flow deposit hatası: ${error.message}`;
+        errorMessage = `Flow deposit error: ${error.message}`;
       }
       
       notification.error(errorMessage);
