@@ -12,11 +12,11 @@ export default function GameHistory({ history }) {
       let explorerUrl;
       
       if (network === 'flow-testnet') {
-        explorerUrl = `https://testnet.flowscan.org/transaction/${txHash}`;
+        explorerUrl = `https://testnet.flowscan.io/tx/${txHash}`;
       } else if (network === 'flow-mainnet') {
-        explorerUrl = `https://flowscan.org/transaction/${txHash}`;
+        explorerUrl = `https://flowscan.io/tx/${txHash}`;
       } else {
-        explorerUrl = `https://testnet.flowscan.org/transaction/${txHash}`;
+        explorerUrl = `https://testnet.flowscan.io/tx/${txHash}`;
       }
       
       window.open(explorerUrl, '_blank');

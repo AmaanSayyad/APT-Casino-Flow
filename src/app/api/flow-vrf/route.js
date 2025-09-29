@@ -99,91 +99,70 @@ export async function POST(request) {
       formattedUserAddress = `0x${userAddress}`;
     }
 
-    // Use Flow CLI to execute the casino game transaction
-    const { exec } = require('child_process');
-    const fs = require('fs');
-    const path = require('path');
+    // Generate mock random number for now since we're using localStorage
+    // In production, this would execute real Flow transactions
+    let transactionId = `mock_tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    let blockHeight = Math.floor(Math.random() * 1000000) + 50000000;
+    let randomNumber = Math.floor(Math.random() * 1000000);
     
-    // Read the transaction file
-    const txPath = path.join(process.cwd(), transactionFile);
-    if (!fs.existsSync(txPath)) {
-      return NextResponse.json(
-        { error: 'Transaction file not found: ' + transactionFile },
-        { status: 500 }
-      );
-    }
+    // Generate game-specific results
+    let gameResult = {};
     
-    let transactionId;
-    let blockHeight;
-    let randomNumber;
-    
-    try {
-      // Execute Flow CLI command with game-specific arguments
-      const argsString = transactionArgs.join(' ');
-      const command = `flow transactions send ${txPath} ${argsString} --signer treasury --network testnet`;
-      
-      console.log('🔧 Executing Flow VRF transaction...');
-      
-      const { stdout, stderr } = await new Promise((resolve, reject) => {
-        exec(command, { cwd: process.cwd() }, (error, stdout, stderr) => {
-          if (error) {
-            console.error('Flow CLI error:', error);
-            console.error('stderr:', stderr);
-            reject(new Error(`Flow CLI execution failed: ${error.message}`));
-            return;
+    switch (gameType.toLowerCase()) {
+      case 'roulette':
+        const rouletteNumber = randomNumber % 37;
+        const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+        gameResult = {
+          winningNumber: rouletteNumber.toString(),
+          color: rouletteNumber === 0 ? 'green' : (redNumbers.includes(rouletteNumber) ? 'red' : 'black'),
+          isWin: 'false',
+          multiplier: '0'
+        };
+        break;
+        
+      case 'mines':
+        const mineCount = parseInt(gameParams.mineCount || '3');
+        const minePositions = [];
+        let seed = randomNumber;
+        while (minePositions.length < mineCount) {
+          seed = (seed * 1103515245 + 12345) % (2 ** 31);
+          const position = seed % 25;
+          if (!minePositions.includes(position)) {
+            minePositions.push(position);
           }
-          resolve({ stdout, stderr });
-        });
-      });
-      
-      console.log('Flow CLI stdout:', stdout);
-      if (stderr) console.log('Flow CLI stderr:', stderr);
-      
-      // Parse transaction ID from stdout
-      const txIdMatch = stdout.match(/Transaction ID: ([a-f0-9]+)/);
-      if (!txIdMatch) {
-        throw new Error('Could not parse transaction ID from Flow CLI output');
-      }
-      
-      transactionId = txIdMatch[1];
-      console.log('📝 VRF Transaction submitted:', transactionId);
-      
-      // Wait for transaction to be sealed using FCL
-      console.log('⏳ Waiting for VRF transaction to be sealed...');
-      const sealedTx = await fcl.tx(transactionId).onceSealed();
-      console.log('✅ VRF Transaction sealed:', sealedTx);
-      
-      // Check transaction status
-      if (sealedTx.status !== 4) { // 4 = SEALED and successful
-        console.error('VRF Transaction failed:', sealedTx);
-        throw new Error(`VRF Transaction failed with status: ${sealedTx.status}`);
-      }
-      
-      // Extract block height and game results from transaction events
-      blockHeight = sealedTx.blockId;
-      
-      // Parse game results from transaction events
-      let gameResult = {};
-      if (sealedTx.events && sealedTx.events.length > 0) {
-        const gameEvent = sealedTx.events.find(event => event.type.includes('GamePlayed'));
-        if (gameEvent && gameEvent.data) {
-          gameResult = gameEvent.data.gameResult || {};
-          randomNumber = parseInt(gameEvent.data.randomSeed || '0');
         }
-      }
-      
-      // Fallback random number if not found in events
-      if (!randomNumber) {
-        const seed = parseInt(transactionId.slice(-8), 16);
-        randomNumber = Math.abs(seed);
-      }
-      
-      // No temp file to clean up since we're using existing transaction files
-      
-    } catch (cliError) {
-      // No temp file cleanup needed
-      throw cliError;
+        gameResult = {
+          minePositions: JSON.stringify(minePositions.sort((a, b) => a - b)),
+          hitMine: 'false',
+          safeReveals: '0',
+          isWin: 'false',
+          multiplier: '1.0'
+        };
+        break;
+        
+      case 'plinko':
+        const rows = parseInt(gameParams.rows || '16');
+        const finalPosition = randomNumber % (rows + 1);
+        gameResult = {
+          finalPosition: finalPosition.toString(),
+          multiplier: '1.0',
+          isWin: 'false',
+          path: 'calculated'
+        };
+        break;
+        
+      case 'wheel':
+        const segments = parseInt(gameParams.segments || '54');
+        const winningSegment = randomNumber % segments;
+        gameResult = {
+          winningSegment: winningSegment.toString(),
+          multiplier: '1.0',
+          isWin: 'false'
+        };
+        break;
     }
+    
+    console.log(`✅ Mock Flow transaction completed: Random=${randomNumber}, TX=${transactionId}`);
 
     console.log(`✅ Flow VRF completed: Random=${randomNumber}, TX=${transactionId}`);
     

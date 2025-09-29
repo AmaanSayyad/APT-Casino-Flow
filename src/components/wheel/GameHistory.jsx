@@ -33,11 +33,11 @@ const GameHistory = ({ gameHistory }) => {
       let explorerUrl;
 
       if (network === 'flow-testnet') {
-        explorerUrl = `https://testnet.flowscan.org/transaction/${hash}`;
+        explorerUrl = `https://testnet.flowscan.io/tx/${hash}`;
       } else if (network === 'flow-mainnet') {
-        explorerUrl = `https://flowscan.org/transaction/${hash}`;
+        explorerUrl = `https://flowscan.io/tx/${hash}`;
       } else {
-        explorerUrl = `https://testnet.flowscan.org/transaction/${hash}`;
+        explorerUrl = `https://testnet.flowscan.io/tx/${hash}`;
       }
 
       window.open(explorerUrl, '_blank');

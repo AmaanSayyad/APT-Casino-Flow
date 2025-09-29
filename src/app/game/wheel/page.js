@@ -15,8 +15,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import { setBalance, setFlowBalance, setLoading, loadBalanceFromStorage } from '@/store/balanceSlice';
 import { useNotification } from '@/components/NotificationSystem';
 import useWalletStatus from '@/hooks/useWalletStatus';
-// Flow VRF integration for randomness
-import { flowVRFService } from '@/services/FlowVRFService';
+// Flow wallet integration
+import { useFlowWallet } from '@/hooks/useFlowWallet';
 
 // Import new components
 import WheelVideo from "./components/WheelVideo";
@@ -50,6 +50,7 @@ export default function Home() {
   const { userBalance, userFlowBalance, isLoading: isLoadingBalance } = useSelector((state) => state.balance);
   const notification = useNotification();
   const { isConnected } = useWalletStatus();
+  const { executeTransaction, address } = useFlowWallet();
   
   // Format balance for display (show 0 instead of 0.00000)
   const formatBalance = (balance) => {
@@ -105,29 +106,76 @@ export default function Home() {
     try {
       console.log('🔮 FLOW VRF: Generating background VRF for Wheel game...');
       
-      const vrfResult = await flowVRFService.requestRandomness('WHEEL', { 
-        purpose: 'wheel_spin', 
-        gameType: 'WHEEL',
-        betAmount: betAmount,
-        segments: noOfSegments
-      });
+      const transactionResult = await executeTransaction(
+        `
+        import CasinoGames from 0x2083a55fb16f8f60
+
+        transaction(
+            betAmount: UFix64,
+            segments: UInt8
+        ) {
+            
+            let gameResult: CasinoGames.GameResult
+            
+            prepare(player: auth(BorrowValue) &Account) {
+                log("Playing Wheel with bet amount: ".concat(betAmount.toString()))
+                log("Segments: ".concat(segments.toString()))
+                log("Player address: ".concat(player.address.toString()))
+            }
+            
+            execute {
+                // Play the wheel game
+                self.gameResult = CasinoGames.playWheel(
+                    player: self.account.address,
+                    betAmount: betAmount,
+                    segments: segments
+                )
+                
+                log("Wheel game completed!")
+                log("Winning segment: ".concat(self.gameResult.result["winningSegment"] ?? "unknown"))
+                log("Payout: ".concat(self.gameResult.payout.toString()))
+                log("Random seed: ".concat(self.gameResult.randomSeed.toString()))
+            }
+            
+            post {
+                self.gameResult.gameType == "WHEEL": "Game type must be WHEEL"
+                self.gameResult.player == self.account.address: "Player address must match"
+            }
+        }
+        `,
+        (arg, t) => [
+          arg(betAmount.toFixed(8), t.UFix64),
+          arg(noOfSegments.toString(), t.UInt8)
+        ]
+      );
       
-      console.log('✅ FLOW VRF: Background VRF generated successfully');
-      console.log('🔗 Transaction:', vrfResult.transactionHash);
+      console.log('✅ Flow Transaction: Background transaction completed successfully');
+      console.log('🔗 Transaction:', transactionResult.id);
       
-      // Update the history item with real entropy proof
+      // Extract game result from transaction events
+      let gameResultData = null;
+      if (transactionResult.events) {
+        const gameEvent = transactionResult.events.find(event => 
+          event.type.includes('GamePlayed') || event.type.includes('CasinoGames.GamePlayed')
+        );
+        
+        if (gameEvent && gameEvent.data) {
+          gameResultData = gameEvent.data.gameResult || gameEvent.data.result;
+        }
+      }
+      
+      // Update the history item with real transaction proof
       setGameHistory(prev => prev.map(item => 
         item.id === historyItemId 
           ? {
               ...item,
-              vrfData: {
-                requestId: vrfResult.requestId,
-                randomValue: vrfResult.randomValue,
-                transactionHash: vrfResult.transactionHash,
-                blockHeight: vrfResult.blockHeight,
-                explorerUrl: `https://testnet.flowscan.org/transaction/${vrfResult.transactionHash}`,
-                timestamp: vrfResult.timestamp,
-                source: 'Flow VRF'
+              transactionData: {
+                transactionId: transactionResult.id,
+                blockHeight: transactionResult.blockId,
+                gameResult: gameResultData,
+                explorerUrl: `https://testnet.flowscan.io/tx/${transactionResult.id}`,
+                timestamp: Date.now(),
+                source: 'Flow Blockchain'
               }
             }
           : item
@@ -139,7 +187,7 @@ export default function Home() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            sessionId: vrfResult.transactionId || `wheel_${Date.now()}`,
+            sessionId: transactionResult.id || `wheel_${Date.now()}`,
             gameType: 'WHEEL',
             channelId: entropyResult.entropyProof?.requestId || 'entropy_channel',
             valueEth: 0
@@ -232,7 +280,7 @@ export default function Home() {
             randomNumber: Math.floor(Math.random() * 1000000),
             transactionHash: 'generating...',
             arbiscanUrl: 'https://testnet.arbiscan.io/',
-            explorerUrl: 'https://testnet.flowscan.org',
+            explorerUrl: 'https://testnet.flowscan.io',
             timestamp: Date.now(),
             source: 'Generating...'
           };

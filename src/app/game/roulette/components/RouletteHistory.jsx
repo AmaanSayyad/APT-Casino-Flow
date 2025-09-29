@@ -275,7 +275,7 @@ const RouletteHistory = ({ bettingHistory = [] }) => {
   // Open Flow VRF Explorer link
   const openVRFExplorer = (txHash) => {
     if (txHash) {
-      const flowExplorerUrl = `https://testnet.flowscan.org/transaction/${txHash}`;
+      const flowExplorerUrl = `https://testnet.flowscan.io/tx/${txHash}`;
       window.open(flowExplorerUrl, '_blank');
     }
   };

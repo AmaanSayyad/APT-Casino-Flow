@@ -68,7 +68,7 @@ export const FLOW_NETWORK = {
   name: "Flow Testnet",
   chainId: "testnet",
   rpcUrl: "https://rest-testnet.onflow.org",
-  blockExplorer: "https://testnet.flowscan.org",
+  blockExplorer: "https://testnet.flowscan.io",
   nativeCurrency: {
     name: "FLOW",
     symbol: "FLOW",

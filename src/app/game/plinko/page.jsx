@@ -13,7 +13,7 @@ import { motion } from "framer-motion";
 import { Typography } from "@mui/material";
 import { GiRollingDices, GiCardRandom, GiPokerHand } from "react-icons/gi";
 import { FaPercentage, FaBalanceScale, FaChartLine, FaCoins, FaTrophy, FaPlay, FaExternalLinkAlt } from "react-icons/fa";
-import { flowVRFService } from '../../../services/FlowVRFService';
+import { useFlowWallet } from '@/hooks/useFlowWallet';
 
 export default function Plinko() {
   const userBalance = useSelector((state) => state.balance.userBalance);
@@ -25,6 +25,7 @@ export default function Plinko() {
   const [showMobileWarning, setShowMobileWarning] = useState(false);
 
   const plinkoGameRef = useRef(null);
+  const { executeTransaction, address } = useFlowWallet();
 
   // Smooth scroll helper
   const scrollToElement = (elementId) => {
@@ -197,26 +198,78 @@ export default function Plinko() {
   const handleBetHistoryChange = async (newBetResult) => {
     console.log('🔍 handleBetHistoryChange called with:', newBetResult);
     
-    // Use Flow VRF for randomness
+    // Use Flow transaction for randomness
     try {
-      console.log('🎯 Using Flow VRF for Plinko randomness...');
-      const vrfResult = await flowVRFService.requestRandomness('PLINKO', {
-        purpose: 'plinko_ball_path',
-        gameType: 'PLINKO',
-        betAmount: newBetResult.betAmount,
-        rows: currentRows,
-        riskLevel: currentRiskLevel
-      });
-      console.log('🎲 Plinko game completed with Flow VRF randomness:', vrfResult);
+      console.log('🎯 Using Flow transaction for Plinko randomness...');
+      const transactionResult = await executeTransaction(
+        `
+        import CasinoGames from 0x2083a55fb16f8f60
+
+        transaction(
+            betAmount: UFix64,
+            risk: String,
+            rows: UInt8
+        ) {
+            
+            let gameResult: CasinoGames.GameResult
+            
+            prepare(player: auth(BorrowValue) &Account) {
+                log("Playing Plinko with bet amount: ".concat(betAmount.toString()))
+                log("Risk: ".concat(risk))
+                log("Rows: ".concat(rows.toString()))
+                log("Player address: ".concat(player.address.toString()))
+            }
+            
+            execute {
+                // Play the plinko game
+                self.gameResult = CasinoGames.playPlinko(
+                    player: self.account.address,
+                    betAmount: betAmount,
+                    risk: risk,
+                    rows: rows
+                )
+                
+                log("Plinko game completed!")
+                log("Final position: ".concat(self.gameResult.result["finalPosition"] ?? "unknown"))
+                log("Payout: ".concat(self.gameResult.payout.toString()))
+                log("Random seed: ".concat(self.gameResult.randomSeed.toString()))
+            }
+            
+            post {
+                self.gameResult.gameType == "PLINKO": "Game type must be PLINKO"
+                self.gameResult.player == self.account.address: "Player address must match"
+            }
+        }
+        `,
+        (arg, t) => [
+          arg(newBetResult.betAmount.toFixed(8), t.UFix64),
+          arg(currentRiskLevel.toLowerCase(), t.String),
+          arg(currentRows.toString(), t.UInt8)
+        ]
+      );
+      console.log('🎲 Plinko game completed with Flow transaction:', transactionResult);
       
-      // Add Flow VRF info to the bet result
+      // Extract game result from transaction events
+      let gameResultData = null;
+      if (transactionResult.events) {
+        const gameEvent = transactionResult.events.find(event => 
+          event.type.includes('GamePlayed') || event.type.includes('CasinoGames.GamePlayed')
+        );
+        
+        if (gameEvent && gameEvent.data) {
+          gameResultData = gameEvent.data.gameResult || gameEvent.data.result;
+        }
+      }
+      
+      // Add Flow transaction info to the bet result
       const enhancedBetResult = {
         ...newBetResult,
-        vrfData: {
-          requestId: vrfResult.requestId,
-          randomValue: vrfResult.randomValue,
-          blockHeight: vrfResult.blockHeight,
-          timestamp: vrfResult.timestamp
+        transactionData: {
+          transactionId: transactionResult.id,
+          blockHeight: transactionResult.blockId,
+          gameResult: gameResultData,
+          explorerUrl: `https://testnet.flowscan.io/tx/${transactionResult.id}`,
+          timestamp: Date.now()
         },
         transactionHash: vrfResult.transactionHash,
         timestamp: new Date().toISOString()

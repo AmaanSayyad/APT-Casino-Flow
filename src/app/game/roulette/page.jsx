@@ -37,6 +37,7 @@ import { setBalance, setFlowBalance, setLoading, loadBalanceFromStorage } from '
 // Flow VRF service imported below
 import { flowVRFService } from '@/services/FlowVRFService';
 import { useFlowWallet } from '@/hooks/useFlowWallet';
+import { useNotification } from '@/components/NotificationSystem';
 
 // Flow client functions will be added here when needed
 
@@ -1381,6 +1382,7 @@ export default function GameRoulette() {
   // Redux state management
   const dispatch = useDispatch();
   const { userBalance, isLoading: isLoadingBalance } = useSelector((state) => state.balance);
+  const notification = useNotification();
 
   // Function to fetch real FLOW balance
   const fetchRealBalance = useCallback(async () => {
@@ -2022,34 +2024,140 @@ export default function GameRoulette() {
           }
         };
 
-        // Generate random number using Flow VRF
-        flowVRFService.generateRouletteNumber(address, totalBetAmount, 'multiple').then(vrfResult => {
-          console.log('🎲 FLOW VRF: Roulette randomness generated:', vrfResult);
+        // Execute Flow transaction for roulette game
+        try {
+          executeTransaction(
+          `
+          import CasinoGames from 0x2083a55fb16f8f60
 
-          // Use the VRF result as the winning number
-          const winningNumber = vrfResult.rouletteNumber;
+          transaction(
+              betAmount: UFix64,
+              betType: String,
+              betNumbers: [UInt8]
+          ) {
+              
+              let gameResult: CasinoGames.GameResult
+              
+              prepare(player: auth(BorrowValue) &Account) {
+                  log("Playing Roulette with bet amount: ".concat(betAmount.toString()))
+                  log("Bet type: ".concat(betType))
+                  log("Player address: ".concat(player.address.toString()))
+              }
+              
+              execute {
+                  // Play the roulette game
+                  self.gameResult = CasinoGames.playRoulette(
+                      player: self.account.address,
+                      betAmount: betAmount,
+                      betType: betType,
+                      betNumbers: betNumbers
+                  )
+                  
+                  log("Roulette game completed!")
+                  log("Winning number: ".concat(self.gameResult.result["winningNumber"] ?? "unknown"))
+                  log("Payout: ".concat(self.gameResult.payout.toString()))
+                  log("Random seed: ".concat(self.gameResult.randomSeed.toString()))
+              }
+              
+              post {
+                  self.gameResult.gameType == "ROULETTE": "Game type must be ROULETTE"
+                  self.gameResult.player == self.account.address: "Player address must match"
+              }
+          }
+          `,
+          (arg, t) => [
+            arg(totalBetAmount.toFixed(8), t.UFix64),
+            arg('multiple', t.String),
+            arg([], t.Array(t.UInt8))
+          ]
+        ).then(transactionResult => {
+          console.log('🎲 Flow Transaction: Roulette result received:', transactionResult);
+
+          // Extract game result from transaction events
+          let winningNumber = 0;
+          let gameResultData = null;
+          
+          if (transactionResult.events) {
+            const gameEvent = transactionResult.events.find(event => 
+              event.type.includes('GamePlayed') || event.type.includes('CasinoGames.GamePlayed')
+            );
+            
+            if (gameEvent && gameEvent.data) {
+              gameResultData = gameEvent.data.gameResult || gameEvent.data.result;
+              winningNumber = parseInt(gameResultData?.winningNumber || '0');
+            }
+          }
+
+          // Fallback: generate random number from transaction ID if no events
+          if (!gameResultData) {
+            const seed = parseInt(transactionResult.id.slice(-8), 16);
+            winningNumber = Math.abs(seed) % 37;
+            gameResultData = {
+              winningNumber: winningNumber.toString(),
+              color: winningNumber === 0 ? 'green' : ([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36].includes(winningNumber) ? 'red' : 'black'),
+              isWin: 'false',
+              multiplier: '0'
+            };
+          }
+
+          // Use the transaction result as the winning number
           setRollResult(winningNumber);
 
-          // Add Flow VRF proof info to the bet result
-          newBet.flowVRF = {
-            transactionId: vrfResult.transactionId,
-            blockHeight: vrfResult.blockHeight,
-            randomNumber: vrfResult.randomNumber,
-            rouletteNumber: vrfResult.rouletteNumber,
-            color: vrfResult.color,
-            explorerUrl: vrfResult.explorerUrl,
-            timestamp: vrfResult.timestamp,
-            source: 'Flow VRF'
+          // Recalculate payout with the actual winning number from blockchain
+          let totalPayout = 0;
+          let winningBets = [];
+          let losingBets = [];
+
+          allBets.forEach(bet => {
+            const isWinner = checkWin(bet.type, bet.value, winningNumber);
+            const payoutRatio = getPayoutRatio(bet.type);
+
+            if (isWinner) {
+              const betPayout = bet.amount * payoutRatio;
+              totalPayout += betPayout;
+              winningBets.push({ ...bet, payout: betPayout, multiplier: payoutRatio });
+            } else {
+              losingBets.push({ ...bet, loss: bet.amount });
+            }
+          });
+
+          // Calculate net result and update balance
+          const netResult = totalPayout > 0 ? totalPayout : 0;
+          const finalBalance = balanceAfterBet + netResult;
+          dispatch(setFlowBalance(formatBalance(finalBalance)));
+
+          // Update newBet with actual results
+          newBet.result = winningNumber;
+          newBet.win = netResult > 0;
+          newBet.payout = netResult;
+          newBet.totalPayout = totalPayout;
+          newBet.winningBets = winningBets.map(bet => `${bet.name}: ${bet.amount} × ${bet.multiplier}x`);
+          newBet.losingBets = losingBets.map(bet => `${bet.name}: -${bet.amount}`);
+
+          // Add Flow transaction proof info to the bet result
+          newBet.flowTransaction = {
+            transactionId: transactionResult.id || transactionResult.transactionId,
+            blockHeight: transactionResult.blockId,
+            winningNumber: winningNumber,
+            color: gameResultData.color,
+            explorerUrl: `https://testnet.flowscan.io/tx/${transactionResult.id || transactionResult.transactionId}`,
+            timestamp: Date.now(),
+            source: 'Flow Blockchain'
           };
 
-          // Update betting history with Flow VRF proof
-          setBettingHistory(prev => {
-            const updatedHistory = [...prev];
-            if (updatedHistory.length > 0) {
-              updatedHistory[0] = { ...updatedHistory[0], flowVRF: newBet.flowVRF };
-            }
-            return updatedHistory;
-          });
+          // Update betting history with complete bet result
+          setBettingHistory(prev => [newBet, ...prev].slice(0, 50));
+
+          // Show result notification
+          if (netResult > 0) {
+            const winMessage = winningBets.length === 1
+              ? `🎉 WINNER! ${winningBets[0].name} - You won ${formatBalance(netResult - totalBetAmount)} FLOW!`
+              : `🎉 MULTIPLE WINNERS! ${winningBets.length} bets won - Total: ${formatBalance(netResult - totalBetAmount)} FLOW!`;
+            
+            notification.success(winMessage);
+          } else {
+            notification.info(`Number ${winningNumber} (${gameResultData.color}). Better luck next time!`);
+          }
 
           // Fire-and-forget explorer log via casino wallet
           try {
@@ -2057,9 +2165,9 @@ export default function GameRoulette() {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                sessionId: vrfResult.transactionId || `roulette_${Date.now()}`,
+                sessionId: transactionResult.id || `roulette_${Date.now()}`,
                 gameType: 'ROULETTE',
-                requestId: vrfResult.transactionId || 'flow_vrf_request',
+                requestId: transactionResult.id || 'flow_transaction_request',
                 valueEth: 0
               })
             })
@@ -2072,52 +2180,59 @@ export default function GameRoulette() {
             console.warn('Casino session log threw (Roulette):', e);
           }
 
-          // Flow VRF handles randomness generation
-          console.log('✅ Flow VRF randomness processed for Roulette');
+          // Flow transaction handles randomness generation
+          console.log('✅ Flow transaction randomness processed for Roulette');
         }).then(() => {
-          console.log('📊 FLOW VRF: Roulette game completed successfully');
+          console.log('📊 Flow Transaction: Roulette game completed successfully');
         }).catch(error => {
-          console.error('❌ FLOW VRF: Error processing Roulette game:', error);
-          // Still add the bet result even if Flow VRF processing fails
-          newBet.vrfData = null;
+          console.error('❌ Flow Transaction: Error processing Roulette game:', error);
+          
+          // Generate fallback random number for UI
+          const fallbackNumber = Math.floor(Math.random() * 37);
+          setRollResult(fallbackNumber);
+          
+          // Calculate payout with fallback number
+          let totalPayout = 0;
+          let winningBets = [];
+          let losingBets = [];
+
+          allBets.forEach(bet => {
+            const isWinner = checkWin(bet.type, bet.value, fallbackNumber);
+            const payoutRatio = getPayoutRatio(bet.type);
+
+            if (isWinner) {
+              const betPayout = bet.amount * payoutRatio;
+              totalPayout += betPayout;
+              winningBets.push({ ...bet, payout: betPayout, multiplier: payoutRatio });
+            } else {
+              losingBets.push({ ...bet, loss: bet.amount });
+            }
+          });
+
+          // Calculate net result and update balance
+          const netResult = totalPayout > 0 ? totalPayout : 0;
+          const finalBalance = balanceAfterBet + netResult;
+          dispatch(setFlowBalance(formatBalance(finalBalance)));
+
+          // Update newBet with fallback results
+          newBet.result = fallbackNumber;
+          newBet.win = netResult > 0;
+          newBet.payout = netResult;
+          newBet.totalPayout = totalPayout;
+          newBet.winningBets = winningBets.map(bet => `${bet.name}: ${bet.amount} × ${bet.multiplier}x`);
+          newBet.losingBets = losingBets.map(bet => `${bet.name}: -${bet.amount}`);
+          newBet.transactionError = error.message;
+
+          // Update betting history with fallback result
+          setBettingHistory(prev => [newBet, ...prev].slice(0, 50));
+
+          // Show error notification
+          notification.error(`Transaction failed, using fallback random number: ${fallbackNumber}`);
         });
 
-        console.log("newBet object created:", {
-          win: newBet.win,
-          payout: newBet.payout,
-          netResult,
-          totalPayout,
-          totalBetAmount
-        });
+        // Betting history and notifications will be updated inside the transaction promise
 
-        setBettingHistory(prev => [newBet, ...prev].slice(0, 50)); // Keep last 50 bets
-
-        console.log("New bet added to history:", newBet); // Debug log
-        console.log("Updated bettingHistory:", [newBet, ...bettingHistory].slice(0, 50)); // Debug log
-
-        // Show result notification
-        if (netResult > 0) {
-          const winMessage = winningBets.length === 1
-            ? `🎉 WINNER! ${winningBets[0].name} - You won ${formatBalance(netResult - totalBetAmount)} FLOW!`
-            : `🎉 MULTIPLE WINNERS! ${winningBets.length} bets won - Total: ${formatBalance(netResult - totalBetAmount)} FLOW!`;
-
-          setNotificationMessage(winMessage);
-          setNotificationSeverity("success");
-          setSnackbarMessage(winMessage);
-        } else {
-          setNotificationMessage(`💸 Number ${winningNumber} - You lost ${formatBalance(totalBetAmount)} FLOW!`);
-          setNotificationSeverity("error");
-          setSnackbarMessage(`💸 Number ${winningNumber} - You lost ${formatBalance(totalBetAmount)} FLOW!`);
-        }
-        setSnackbarOpen(true);
-
-        // Re-enable betting
-        setSubmitDisabled(false);
-        setWheelSpinning(false);
-
-      }, 4000); // Wait 4 seconds for wheel animation
-
-    } catch (error) {
+        } catch (error) {
       console.error("Error in lockBet:", error);
       setError(error.message || error.toString());
       setShowNotification(false);
@@ -2126,7 +2241,11 @@ export default function GameRoulette() {
 
       // No need to refund since we don't deduct balance upfront anymore
     } finally {
-      // Don't disable submit here since we removed the blockchain wait
+      // Re-enable betting after animation
+      setTimeout(() => {
+        setSubmitDisabled(false);
+        setWheelSpinning(false);
+      }, 4000); // Wait 4 seconds for wheel animation
     }
   };
 

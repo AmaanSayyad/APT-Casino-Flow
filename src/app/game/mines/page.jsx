@@ -207,7 +207,7 @@ export default function Mines() {
         randomValue: vrfResult.randomValue,
         transactionHash: vrfResult.transactionHash,
         blockHeight: vrfResult.blockHeight,
-        explorerUrl: `https://testnet.flowscan.org/transaction/${vrfResult.transactionHash}`,
+        explorerUrl: `https://testnet.flowscan.io/tx/${vrfResult.transactionHash}`,
         timestamp: vrfResult.timestamp,
         source: 'Flow VRF'
       };
