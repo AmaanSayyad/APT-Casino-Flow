@@ -308,11 +308,16 @@ export default function Plinko() {
       }
       
       // Add Flow VRF transaction info to the bet result (compatible with game history)
+      // Calculate net win: (bet * multiplier) - bet = bet * (multiplier - 1)
+      const totalPayout = newBetResult.betAmount * multiplier;
+      const calculatedNetWin = totalPayout - newBetResult.betAmount; // This can be negative
+      
       const enhancedBetResult = {
         ...newBetResult,
         finalPosition: finalPosition,
         multiplier: multiplier,
-        payout: newBetResult.betAmount * multiplier,
+        payout: totalPayout, // Keep total payout for display
+        netWin: calculatedNetWin, // Add net win for balance calculation
         flowVRF: {
           transactionId: transactionResult.id || transactionResult.transactionId,
           blockHeight: transactionResult.blockId,
@@ -331,15 +336,15 @@ export default function Plinko() {
       
       // Update balance based on treasury transaction result
       // Note: Bet amount was already deducted when ball was dropped
-      const payout = parseFloat(enhancedBetResult.payout);
+      const netWin = parseFloat(enhancedBetResult.netWin);
       const currentBalance = parseFloat(userFlowBalance);
       
-      // Only add payout (bet was already deducted in PlinkoGame)
-      const newBalance = currentBalance + payout;
+      // Add only net win (can be negative for losses)
+      const newBalance = currentBalance + netWin;
       
       console.log('💰 Balance update:', {
         currentBalance,
-        payout,
+        netWin,
         newBalance
       });
       

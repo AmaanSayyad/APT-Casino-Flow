@@ -482,7 +482,8 @@ const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChang
         
         // Use latest bet amount from ref to avoid stale values captured by closures
         const latestBetAmount = betAmountRef.current;
-        const reward = latestBetAmount * multiplierValue;
+        const totalPayout = latestBetAmount * multiplierValue;
+        const netWin = totalPayout - latestBetAmount; // Net win (can be negative)
         
         console.log('=== GAME RESULT ===');
         console.log('Row configuration:', rows, 'rows,', riskLevel, 'risk');
@@ -491,14 +492,15 @@ const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChang
         console.log('Bet amount (ref):', betAmountRef.current);
         console.log('Multiplier:', multiplier, '(bin index:', binIndex, ')');
         console.log('Multiplier value:', multiplierValue);
-        console.log('Reward calculated:', reward, 'FLOW');
+        console.log('Total payout:', totalPayout, 'FLOW');
+        console.log('Net win/loss:', netWin, 'FLOW');
         console.log('==================');
         
         // Note: Balance updates are handled by treasury transaction, not here
         if (latestBetAmount > 0) {
           console.log('Game completed - balance will be updated by treasury transaction');
           console.log('  Current balance from Redux:', userFlowBalance);
-          console.log('  Reward calculated:', reward);
+          console.log('  Net win calculated:', netWin);
         }
         
         // Play bin land sound
@@ -512,7 +514,7 @@ const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChang
           betAmount: formatBalance(latestBetAmount),
           multiplier: multipliers[binIndex],
           multiplierValue: multiplierValue, // Add numerical multiplier value
-          payout: formatBalance(reward),
+          payout: formatBalance(totalPayout),
           timestamp: Date.now(),
           rows: currentRows,
           riskLevel: currentRiskLevel,
@@ -534,7 +536,7 @@ const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChang
         
         setTimeout(() => {
           setIsDropping(false);
-          console.log(`Ball landed in bin ${binIndex} with multiplier ${multipliers[binIndex]}, payout: $${reward}`);
+          console.log(`Ball landed in bin ${binIndex} with multiplier ${multipliers[binIndex]}, net win: ${netWin} FLOW`);
         }, 100);
       }
       
