@@ -251,13 +251,7 @@ export async function POST(request) {
       ];
     }
 
-    // Create temporary transaction file
-    const tempDir = path.join(process.cwd(), 'temp');
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
-    
-    // Remove temporary file creation since we're using existing files
+    // No temporary files needed - using existing transaction files
 
     // Build Flow CLI command arguments - simplified format
     let flowArgs = '';
