@@ -48,7 +48,7 @@ The traditional online gambling industry is plagued by several issues, including
 - **Social Layer:** Live streaming, on-chain chat, and NFT-based player profiles.
 
 ## 🧩 Architecture
-<img width="1562" height="704" alt="Screenshot 2025-11-01 at 1 23 33 AM" src="https://github.com/user-attachments/assets/0d9773fa-f7e3-4306-b971-7b26e0286431" />
+<img width="1562" height="704" alt="Screenshot 2025-11-01 at 1 39 57 AM" src="https://github.com/user-attachments/assets/a1d48ed9-217b-4915-8296-76a719a2db2a" />
 
 - **Frontend**: Next.js (App Router), React 18, Tailwind, MUI, Three.js
 - **Wallet/Chain**: Flow Client Library (FCL) + wagmi + RainbowKit
@@ -147,10 +147,10 @@ This project is **deployed and operational on Flow Testnet**. All smart contract
 ┌─────────────────────────────────────────────────────────────┐
 │             FLOW VRF                                        │
 │  ┌────────────────────────────────────────────────────┐    │
-│  │  CasinoVRFConsumer Contract (Solidity)            │    │
-│  │  - Request VRF                                     │    │
-│  │  - Receive Callback with Random Value               │    │
-│  │  - Emit Events for Game Results                     │    │
+│  │  CasinoEntropyConsumer Contract (Solidity)       │    │
+│  │  - Request Entropy                                │    │
+│  │  - Receive Callback with Random Value             │    │
+│  │  - Emit Events for Game Results                   │    │
 │  └────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -263,57 +263,9 @@ const user = await fcl.authenticate();
 
 All game logic and VRF integration are implemented using Solidity smart contracts:
 
-- **CasinoVRFConsumer.sol**: Main contract handling VRF requests and game outcomes
-- **Game Contracts**: Individual Solidity contracts for each game type (Roulette, Mines, Plinko, Wheel)
+- **CasinoEntropyConsumer.sol**: Main contract handling VRF requests and game outcomes
 - **Treasury Contract**: Manages deposits and withdrawals using Solidity
 - Contracts interact with Flow blockchain through FCL and Flow's transaction system
-
-## 🎲 Flow VRF Powered Fairness
-
-### What is Flow VRF?
-
-Flow VRF (Verifiable Random Function) is Flow blockchain's native decentralized randomness service that provides cryptographically secure random numbers on-chain. It ensures fair and unpredictable game outcomes for casino applications running on Flow Testnet.
-
-### Why Flow VRF Matters
-
-- **Cryptographically Secure Randomness**: Uses Flow's native VRF implementation for provably random numbers
-- **On-Chain Verification**: All randomness requests and results are verifiable directly on Flow blockchain
-- **High Throughput**: Designed for gaming applications with low latency requirements
-- **Immune to Manipulation**: Randomness cannot be manipulated by players, casino, or validators
-- **Complete Audit Trail**: Every VRF request and result is permanently stored on-chain with full transparency
-
-### Verify On-Chain
-
-All VRF requests and results can be verified directly on Flow Testnet using Flowscan:
-- View VRF requests as transactions
-- Verify randomness proofs
-- Audit complete game history
-
-### How Flow VRF Works
-
-**Step 1: VRF Request**  
-When you start a game, a randomness request is sent to Flow VRF on Flow Testnet. The request includes game parameters and required fee.
-
-**Step 2: Random Value Generation**  
-Flow VRF generates a cryptographically secure random number using Flow's native randomness oracle.
-
-**Step 3: Callback Execution**  
-The random value is delivered via callback to your Solidity contract, triggering game logic execution.
-
-**Step 4: Result Storage**  
-Game outcome is calculated, events are emitted, and results are permanently stored on-chain.
-
-### Example Usage
-
-```javascript
-import flowVRFService from '@/services/FlowVRFService';
-
-const result = await flowVRFService.generateRandom('ROULETTE', {
-  purpose: 'roulette_spin',
-  gameType: 'ROULETTE',
-  betAmount: 0.1
-});
-```
 
 ## 🎯 Hackathon Track Alignment
 
@@ -342,12 +294,11 @@ npm run deploy:flow      # Deploy Solidity contracts to Flow (if configured)
 npm run fund-treasury    # Fund Flow treasury
 ```
 
-## 📝 Submission Checklist
+## Business Model
+<img width="1640" height="966" alt="Screenshot 2025-11-01 at 1 41 30 AM" src="https://github.com/user-attachments/assets/7929ae1a-54ed-4d6e-9579-0119b8dad282" />
 
-- ✅ **Deployed on Flow Testnet**: All Flow operations use Flow Testnet
-- ✅ **README.md**: This file states project is built on Flow
-- ✅ **Contract Addresses**: Listed above (Flow Testnet)
-- ✅ **GitHub Repository**: Public and accessible
+## Roadmap
+<img width="1710" height="966" alt="Screenshot 2025-11-01 at 1 41 40 AM" src="https://github.com/user-attachments/assets/939f558e-b5e3-4d88-932f-115438290f63" />
 
 ## 🗺️ Roadmap
 
