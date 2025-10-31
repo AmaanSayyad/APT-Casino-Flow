@@ -147,10 +147,10 @@ This project is **deployed and operational on Flow Testnet**. All smart contract
 ┌─────────────────────────────────────────────────────────────┐
 │             FLOW VRF                                        │
 │  ┌────────────────────────────────────────────────────┐    │
-│  │  CasinoEntropyConsumer Contract (Solidity)       │    │
-│  │  - Request Entropy                                │    │
-│  │  - Receive Callback with Random Value             │    │
-│  │  - Emit Events for Game Results                   │    │
+│  │  CasinoVRFConsumer Contract (Solidity)            │    │
+│  │  - Request VRF                                     │    │
+│  │  - Receive Callback with Random Value               │    │
+│  │  - Emit Events for Game Results                     │    │
 │  └────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -263,10 +263,57 @@ const user = await fcl.authenticate();
 
 All game logic and VRF integration are implemented using Solidity smart contracts:
 
-- **CasinoEntropyConsumer.sol**: Main contract handling VRF requests and game outcomes
+- **CasinoVRFConsumer.sol**: Main contract handling VRF requests and game outcomes
 - **Game Contracts**: Individual Solidity contracts for each game type (Roulette, Mines, Plinko, Wheel)
 - **Treasury Contract**: Manages deposits and withdrawals using Solidity
 - Contracts interact with Flow blockchain through FCL and Flow's transaction system
+
+## 🎲 Flow VRF Powered Fairness
+
+### What is Flow VRF?
+
+Flow VRF (Verifiable Random Function) is Flow blockchain's native decentralized randomness service that provides cryptographically secure random numbers on-chain. It ensures fair and unpredictable game outcomes for casino applications running on Flow Testnet.
+
+### Why Flow VRF Matters
+
+- **Cryptographically Secure Randomness**: Uses Flow's native VRF implementation for provably random numbers
+- **On-Chain Verification**: All randomness requests and results are verifiable directly on Flow blockchain
+- **High Throughput**: Designed for gaming applications with low latency requirements
+- **Immune to Manipulation**: Randomness cannot be manipulated by players, casino, or validators
+- **Complete Audit Trail**: Every VRF request and result is permanently stored on-chain with full transparency
+
+### Verify On-Chain
+
+All VRF requests and results can be verified directly on Flow Testnet using Flowscan:
+- View VRF requests as transactions
+- Verify randomness proofs
+- Audit complete game history
+
+### How Flow VRF Works
+
+**Step 1: VRF Request**  
+When you start a game, a randomness request is sent to Flow VRF on Flow Testnet. The request includes game parameters and required fee.
+
+**Step 2: Random Value Generation**  
+Flow VRF generates a cryptographically secure random number using Flow's native randomness oracle.
+
+**Step 3: Callback Execution**  
+The random value is delivered via callback to your Solidity contract, triggering game logic execution.
+
+**Step 4: Result Storage**  
+Game outcome is calculated, events are emitted, and results are permanently stored on-chain.
+
+### Example Usage
+
+```javascript
+import flowVRFService from '@/services/FlowVRFService';
+
+const result = await flowVRFService.generateRandom('ROULETTE', {
+  purpose: 'roulette_spin',
+  gameType: 'ROULETTE',
+  betAmount: 0.1
+});
+```
 
 ## 🎯 Hackathon Track Alignment
 
