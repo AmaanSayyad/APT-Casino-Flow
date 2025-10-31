@@ -51,12 +51,13 @@ The traditional online gambling industry is plagued by several issues, including
 <img width="1562" height="704" alt="Screenshot 2025-11-01 at 1 23 33 AM" src="https://github.com/user-attachments/assets/0d9773fa-f7e3-4306-b971-7b26e0286431" />
 
 - **Frontend**: Next.js (App Router), React 18, Tailwind, MUI, Three.js
-- **Wallet/Chain**: wagmi + RainbowKit
+- **Wallet/Chain**: Flow Client Library (FCL) + wagmi + RainbowKit
+- **Smart Contracts**: Solidity
 - **Randomness**: Flow VRF
 - **State**: Redux Toolkit + React Query
 - **Social**: Livepeer for streaming, Supabase + Socket.io for real-time chat
 
-**APT Casino** is a fully decentralized casino platform that leverages Flow blockchain's unique architecture to deliver a transparent, secure, and user-friendly gambling experience. Built with Flow's native features including Flow Client Library (FCL), smart contracts, and Flow Testnet infrastructure, APT Casino addresses critical issues in traditional online gambling platforms through blockchain transparency and provably fair game mechanics.
+**APT Casino** is a fully decentralized casino platform that leverages Flow blockchain's unique architecture to deliver a transparent, secure, and user-friendly gambling experience. Built with Flow's native features including Flow Client Library (FCL), Solidity smart contracts, and Flow Testnet infrastructure, APT Casino addresses critical issues in traditional online gambling platforms through blockchain transparency and provably fair game mechanics.
 
 ## 🔗 Built on Flow Testnet
 
@@ -78,10 +79,9 @@ This project is **deployed and operational on Flow Testnet**. All smart contract
 #### **Flow Client Library (FCL) Integration**
 - Seamless wallet connection using Flow's native wallet discovery
 - Gasless transactions via treasury-sponsored flows
-- Cadence 1.0 scripts for on-chain data queries
 - Flow wallet compatibility (Blocto, Dapper, Ledger Flow, etc.)
-- **Resource-Oriented Security**: Flow's resource model ensures secure token transfers
-- **On-Chain Balance Queries**: Real-time FLOW token balance verification via Cadence scripts
+- **Solidity Smart Contracts**: All game logic implemented in Solidity
+- **On-Chain Balance Queries**: Real-time FLOW token balance verification via FCL queries
 
 ### 🎲 Key Features
 
@@ -131,15 +131,15 @@ This project is **deployed and operational on Flow Testnet**. All smart contract
 │  ┌────────────────────────────────────────────────────┐    │
 │  │  Flow Client Library (FCL)                         │    │
 │  │  - Wallet Discovery & Connection                   │    │
-│  │  - Script Execution                                │    │
 │  │  - Transaction Signing & Submission                │    │
+│  │  - Balance Queries                                 │    │
 │  └────────────────────────────────────────────────────┘    │
 │                                                              │
 │  ┌────────────────────────────────────────────────────┐    │
 │  │  Flow Testnet                                      │    │
 │  │  - FLOW Token Contracts                            │    │
 │  │  - Treasury Wallet (0x2083a55fb16f8f60)           │    │
-│  │  - Scripts (Balance Queries)                      │    │
+│  │  - Solidity Smart Contracts                        │    │
 │  └────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
                             │
@@ -147,8 +147,7 @@ This project is **deployed and operational on Flow Testnet**. All smart contract
 ┌─────────────────────────────────────────────────────────────┐
 │             FLOW VRF                                        │
 │  ┌────────────────────────────────────────────────────┐    │
-│  │  CasinoEntropyConsumer Contract                   │    │
-│  │  Address                                          │ │
+│  │  CasinoEntropyConsumer Contract (Solidity)       │    │
 │  │  - Request Entropy                                │    │
 │  │  - Receive Callback with Random Value             │    │
 │  │  - Emit Events for Game Results                   │    │
@@ -165,7 +164,8 @@ sequenceDiagram
     participant FCL as Flow Client Library
     participant FT as Flow Testnet
     participant API as API Route
-    participant PE as Pyth Entropy (Arbitrum)
+    participant FVRF as Flow VRF
+    participant SC as Solidity Contract
     
     U->>FCL: Connect Flow Wallet
     FCL->>FT: Authenticate & Get Balance
@@ -174,12 +174,15 @@ sequenceDiagram
     
     U->>UI: Place Bet (e.g., 10 FLOW)
     UI->>FCL: Transfer FLOW to Treasury
-    FCL->>FT: Execute Cadence Transaction
+    FCL->>FT: Execute Transaction
     FT-->>FCL: Transaction Confirmed
     
-    UI->>API: Request Entropy for Game
-    API->>PE: Call CasinoEntropyConsumer.request()
-    PE-->>API: entropyCallback(randomValue)
+    UI->>API: Request Randomness for Game
+    API->>SC: Call Solidity Contract (requestVRF)
+    SC->>FVRF: Request Random Value
+    FVRF-->>SC: VRF Callback (Random Value)
+    SC->>FT: Emit Game Result Event
+    FT-->>API: Event: VRF Fulfilled
     API->>UI: Game Result (Win/Lose)
     
     UI->>U: Update Balance & Display Result
@@ -256,13 +259,22 @@ fcl.config({
 const user = await fcl.authenticate();
 ```
 
+### Solidity Smart Contracts
+
+All game logic and VRF integration are implemented using Solidity smart contracts:
+
+- **CasinoEntropyConsumer.sol**: Main contract handling VRF requests and game outcomes
+- **Game Contracts**: Individual Solidity contracts for each game type (Roulette, Mines, Plinko, Wheel)
+- **Treasury Contract**: Manages deposits and withdrawals using Solidity
+- Contracts interact with Flow blockchain through FCL and Flow's transaction system
+
 ## 🎯 Hackathon Track Alignment
 
 This project aligns with the following Forte Hacks tracks:
 
 - **Best Killer App on Flow**: Consumer-focused casino platform for mass adoption
-- **Best Use of Flow Core Features**: Extensive use of FCL, Cadence 1.0, Flow wallet ecosystem
-- **Best Existing Code Integration**: Integration of existing Pyth Entropy with Flow blockchain
+- **Best Use of Flow Core Features**: Extensive use of FCL, Solidity smart contracts, Flow VRF, Flow wallet ecosystem
+- **Best Use of Flow Forte Actions and Workflows**: Flow VRF integration with Solidity contracts for automated randomness workflows
 
 ## 📹 Demo & Links
 
@@ -278,8 +290,8 @@ npm run build            # Production build
 npm start                # Start production server
 npm run lint             # Run linter
 
-# Flow-specific
-npm run deploy:flow      # Deploy Flow contracts (if configured)
+# Contract Deployment
+npm run deploy:flow      # Deploy Solidity contracts to Flow (if configured)
 npm run fund-treasury    # Fund Flow treasury
 ```
 
@@ -298,7 +310,7 @@ npm run fund-treasury    # Fund Flow treasury
 - ✅ 4 core games (Roulette, Mines, Plinko, Wheel)
 
 ### Phase 2
-- [ ] Deploy smart contracts on Flow Mainnet
+- [ ] Deploy Solidity smart contracts on Flow Mainnet
 - [ ] Flow Actions integration for automated workflows
 - [ ] Flow scheduled transactions for recurring events
 - [ ] Expand game catalog
