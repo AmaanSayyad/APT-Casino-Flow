@@ -264,7 +264,6 @@ const user = await fcl.authenticate();
 All game logic and VRF integration are implemented using Solidity smart contracts:
 
 - **CasinoEntropyConsumer.sol**: Main contract handling VRF requests and game outcomes
-- **Game Contracts**: Individual Solidity contracts for each game type (Roulette, Mines, Plinko, Wheel)
 - **Treasury Contract**: Manages deposits and withdrawals using Solidity
 - Contracts interact with Flow blockchain through FCL and Flow's transaction system
 
@@ -300,13 +299,6 @@ npm run fund-treasury    # Fund Flow treasury
 
 ## Roadmap
 <img width="1710" height="966" alt="Screenshot 2025-11-01 at 1 41 40 AM" src="https://github.com/user-attachments/assets/939f558e-b5e3-4d88-932f-115438290f63" />
-
-## 📝 Submission Checklist
-
-- ✅ **Deployed on Flow Testnet**: All Flow operations use Flow Testnet
-- ✅ **README.md**: This file states project is built on Flow
-- ✅ **Contract Addresses**: Listed above (Flow Testnet)
-- ✅ **GitHub Repository**: Public and accessible
 
 ## 🗺️ Roadmap
 
