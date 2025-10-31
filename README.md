@@ -295,6 +295,12 @@ npm run deploy:flow      # Deploy Solidity contracts to Flow (if configured)
 npm run fund-treasury    # Fund Flow treasury
 ```
 
+## Business Model
+<img width="1640" height="966" alt="Screenshot 2025-11-01 at 1 41 30 AM" src="https://github.com/user-attachments/assets/7929ae1a-54ed-4d6e-9579-0119b8dad282" />
+
+## Roadmap
+<img width="1710" height="966" alt="Screenshot 2025-11-01 at 1 41 40 AM" src="https://github.com/user-attachments/assets/939f558e-b5e3-4d88-932f-115438290f63" />
+
 ## 📝 Submission Checklist
 
 - ✅ **Deployed on Flow Testnet**: All Flow operations use Flow Testnet
