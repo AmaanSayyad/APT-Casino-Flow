@@ -9,31 +9,31 @@ const ProvablyFairSection = () => {
   const steps = [
     {
       id: 1,
-      title: 'Pyth Entropy Request',
-      description: 'When you start a game, a randomness request is sent to Pyth Network Entropy on Flow Testnet. The request includes a custom gas limit and required fee.',
+      title: 'Flow VRF Request',
+      description: 'When you start a game, a randomness request is sent to Flow VRF service on Flow Testnet. The request includes game parameters and bet details.',
       icon: 'client-seed',
-      code: 'import pythEntropyService from \'@/services/PythEntropyService\';\n\nconst result = await pythEntropyService.generateRandom(\'ROULETTE\', {\n  purpose: \'roulette_spin\',\n  gameType: \'ROULETTE\',\n  betAmount: 0.1\n});'
+      code: 'import flowVRFService from \'@/services/FlowVRFService\';\n\nconst result = await flowVRFService.generateRandom(\'ROULETTE\', {\n  purpose: \'roulette_spin\',\n  gameType: \'ROULETTE\',\n  betAmount: 0.1\n});'
     },
     {
       id: 2,
-      title: 'Decentralized Randomness',
-      description: 'Pyth Network provides cryptographically secure randomness derived from multiple data sources, ensuring provably fair results with on-chain verification.',
+      title: 'Cryptographic Randomness',
+      description: 'Flow VRF generates cryptographically secure randomness using Flow blockchain\'s native VRF implementation, ensuring provably fair results.',
       icon: 'server-seed',
-      code: 'const requestId = result.entropyProof.requestId;\nconst randomValue = result.randomValue;\nconst sequenceNumber = result.entropyProof.sequenceNumber;\nconst transactionHash = result.entropyProof.transactionHash;\nconst explorerUrl = result.entropyProof.explorerUrl;'
+      code: 'const requestId = result.vrfProof.requestId;\nconst randomValue = result.randomValue;\nconst sequenceNumber = result.vrfProof.sequenceNumber;\nconst transactionHash = result.vrfProof.transactionHash;\nconst explorerUrl = result.vrfProof.explorerUrl;'
     },
     {
       id: 3,
       title: 'On-Chain Verification',
-      description: 'All randomness requests and results are recorded on Flow Testnet blockchain, providing complete transparency and verifiability.',
+      description: 'All VRF requests and results are recorded on Flow Testnet blockchain, providing complete transparency and verifiability.',
       icon: 'calculation',
-      code: '// Verify randomness via Pyth Entropy Explorer\nconsole.log(\'Transaction:\', transactionHash);\nconsole.log(\'Explorer:\', explorerUrl);\nconsole.log(\'Arbiscan:\', `https://testnet.arbiscan.io/tx/${transactionHash}`);'
+      code: '// Verify randomness via Flow Testnet Explorer\nconsole.log(\'Transaction:\', transactionHash);\nconsole.log(\'Explorer:\', explorerUrl);\nconsole.log(\'Flowscan:\', `https://testnet.flowscan.io/tx/${transactionHash}`);'
     },
     {
       id: 4,
       title: 'Transparent Results',
       description: 'Each game result includes request ID, sequence number, and transaction hash for complete transparency and verifiability.',
       icon: 'verification',
-      code: '// Game result with Pyth Entropy proof\nconst gameResult = {\n  randomValue: result.randomValue,\n  entropyProof: {\n    requestId: result.entropyProof.requestId,\n    sequenceNumber: result.entropyProof.sequenceNumber,\n    transactionHash: result.entropyProof.transactionHash,\n    explorerUrl: result.entropyProof.explorerUrl,\n    timestamp: result.entropyProof.timestamp\n  }\n};'
+      code: '// Game result with Flow VRF proof\nconst gameResult = {\n  randomValue: result.randomValue,\n  vrfProof: {\n    requestId: result.vrfProof.requestId,\n    sequenceNumber: result.vrfProof.sequenceNumber,\n    transactionHash: result.vrfProof.transactionHash,\n    explorerUrl: result.vrfProof.explorerUrl,\n    timestamp: result.vrfProof.timestamp\n  }\n};'
     },
   ];
   
@@ -46,7 +46,7 @@ const ProvablyFairSection = () => {
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="flex items-center mb-8">
           <div className="w-1 h-6 bg-gradient-to-r from-red-magic to-blue-magic rounded-full mr-3"></div>
-          <h2 className="text-2xl font-display font-bold text-white">Pyth Entropy Powered Fairness</h2>
+          <h2 className="text-2xl font-display font-bold text-white">Flow VRF Powered Fairness</h2>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -54,16 +54,16 @@ const ProvablyFairSection = () => {
           <div className="lg:col-span-5">
             <div className="p-[1px] bg-gradient-to-r from-red-magic to-blue-magic rounded-xl h-full">
               <div className="bg-[#1A0015] rounded-xl p-6 h-full">
-                <h3 className="text-white text-xl font-medium mb-4">What is Pyth Entropy?</h3>
+                <h3 className="text-white text-xl font-medium mb-4">What is Flow VRF?</h3>
                 <p className="text-white/80 mb-6">
-                  Pyth Entropy is a decentralized randomness service that provides cryptographically secure random numbers on-chain.
-                  It aggregates randomness from multiple sources and makes it available to smart contracts on Flow Testnet.
+                  Flow VRF (Verifiable Random Function) is Flow blockchain's native randomness service that provides cryptographically secure random numbers on-chain.
+                  It generates verifiable randomness directly within the Flow network using cryptographic proofs.
                 </p>
-                
+
                 <div className="bg-[#250020] p-4 rounded-lg mb-6 border-l-2 border-red-magic">
-                  <h4 className="text-white font-medium mb-2">Why Pyth Entropy matters</h4>
+                  <h4 className="text-white font-medium mb-2">Why Flow VRF matters</h4>
                   <ul className="text-white/70 text-sm space-y-2 list-disc pl-4">
-                    <li>Cryptographically secure randomness from multiple sources</li>
+                    <li>Cryptographically secure randomness native to Flow blockchain</li>
                     <li>On-chain verification and transparency</li>
                     <li>High throughput suitable for gaming applications</li>
                     <li>Immune to manipulation by players, casino, or validators</li>
@@ -91,7 +91,7 @@ const ProvablyFairSection = () => {
           <div className="lg:col-span-7">
             <div className="p-[1px] bg-gradient-to-r from-red-magic/40 to-blue-magic/40 rounded-xl">
               <div className="bg-[#1A0015] rounded-xl p-6">
-                <h3 className="text-white text-xl font-medium mb-4">How Pyth Entropy Works</h3>
+                <h3 className="text-white text-xl font-medium mb-4">How Flow VRF Works</h3>
                 
                 {/* Steps tabs */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-6">
@@ -126,7 +126,7 @@ const ProvablyFairSection = () => {
                     </p>
                   </div>
                   
-                  {/* Pyth Entropy */}
+                  {/* Flow VRF */}
                   <div className="bg-[#0D0D0D] rounded-lg p-4 overflow-x-auto">
                     <pre className="text-sm text-green-400 font-mono">
                       {steps[activeTab-1].code}
