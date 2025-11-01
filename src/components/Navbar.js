@@ -20,6 +20,7 @@ import { checkTreasuryBalance, checkLocalTreasuryBalance } from '../utils/checkT
 import TokenSelector from './TokenSelector';
 
 import { useNotification } from './NotificationSystem';
+import { frothService } from '../services/FrothService';
 
 // Flow Treasury System - similar to FLOW but for Flow
 const FlowBalanceSystem = {
@@ -142,11 +143,8 @@ export default function Navbar() {
       return;
     }
 
-    // FROTH requires MetaMask connection, not Flow Wallet Kit
-    if (!window.ethereum) {
-      notification.error('MetaMask is required for FROTH deposits. Please install MetaMask.');
-      return;
-    }
+    // For FROTH deposits, we'll use MetaMask temporarily until Flow Wallet EVM is ready
+    // Flow Wallet connection is not required for FROTH deposits currently
 
     const amount = parseFloat(frothDepositAmount);
     if (!amount || amount <= 0) {
@@ -160,24 +158,55 @@ export default function Navbar() {
     }
 
     setIsFrothDepositing(true);
-    console.log('🟡 Starting FROTH deposit process on Flow EVM mainnet for:', amount, 'FROTH');
+    console.log('🟡 Starting FROTH deposit process with Flow Wallet EVM for:', amount, 'FROTH');
 
     try {
-      // Request MetaMask connection
-      const accounts = await window.ethereum.request({ 
+      // Get Flow Wallet EVM provider
+      let provider = null;
+      let evmAddress = null;
+
+      console.log('🔍 Checking available providers for FROTH deposit...');
+      console.log('window.ethereum:', !!window.ethereum);
+      console.log('window.ethereum.isFlowWallet:', window.ethereum?.isFlowWallet);
+      console.log('window.ethereum.isMetaMask:', window.ethereum?.isMetaMask);
+      console.log('Flow Wallet connected:', isConnected);
+
+      // Priority 1: Flow Wallet EVM support
+      if (window.ethereum && window.ethereum.isFlowWallet) {
+        console.log('✅ Using Flow Wallet EVM provider');
+        provider = window.ethereum;
+      }
+      // Priority 2: Check if MetaMask is present and show warning but allow usage
+      else if (window.ethereum && window.ethereum.isMetaMask) {
+        console.warn('⚠️ MetaMask detected instead of Flow Wallet EVM');
+        notification.warning('Using MetaMask for FROTH deposits. Flow Wallet EVM support will be available soon for a better experience.');
+        provider = window.ethereum;
+      }
+      // Priority 3: Generic EVM provider (unknown wallet)
+      else if (window.ethereum) {
+        console.log('⚠️ Using generic EVM provider (unknown wallet)');
+        notification.warning('Unknown EVM wallet detected. Please ensure you are using Flow Wallet for best experience.');
+        provider = window.ethereum;
+      }
+      else {
+        throw new Error('No EVM wallet detected. Please install and connect Flow Wallet.');
+      }
+
+      // Request EVM account access
+      const accounts = await provider.request({ 
         method: 'eth_requestAccounts' 
       });
       
       if (!accounts || accounts.length === 0) {
-        throw new Error('Please connect your MetaMask wallet');
+        throw new Error('Please connect your Flow Wallet EVM account');
       }
       
-      const evmAddress = accounts[0];
-      console.log('✅ MetaMask connected:', evmAddress);
+      evmAddress = accounts[0];
+      console.log('✅ Flow Wallet EVM connected:', evmAddress);
 
-      // Add FROTH token to MetaMask if not already added
+      // Add FROTH token to Flow Wallet if not already added
       try {
-        await window.ethereum.request({
+        await provider.request({
           method: 'wallet_watchAsset',
           params: {
             type: 'ERC20',
@@ -189,26 +218,26 @@ export default function Navbar() {
             },
           },
         });
-        console.log('✅ FROTH token added to MetaMask for deposit');
+        console.log('✅ FROTH token added to Flow Wallet for deposit');
       } catch (tokenError) {
-        console.warn('⚠️ Could not add FROTH token to MetaMask:', tokenError);
+        console.warn('⚠️ Could not add FROTH token to Flow Wallet:', tokenError);
         // Continue anyway - not critical
       }
 
       // Switch to Flow EVM Mainnet if needed
-      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      const chainId = await provider.request({ method: 'eth_chainId' });
       if (parseInt(chainId, 16) !== FROTH_CONFIG.NETWORK.chainId) {
         notification.info('Switching to Flow EVM Mainnet...');
         
         try {
-          await window.ethereum.request({
+          await provider.request({
             method: 'wallet_switchEthereumChain',
             params: [{ chainId: `0x${FROTH_CONFIG.NETWORK.chainId.toString(16)}` }],
           });
         } catch (switchError) {
           if (switchError.code === 4902) {
             // Network not added, add it
-            await window.ethereum.request({
+            await provider.request({
               method: 'wallet_addEthereumChain',
               params: [{
                 chainId: `0x${FROTH_CONFIG.NETWORK.chainId.toString(16)}`,
@@ -228,18 +257,19 @@ export default function Navbar() {
         }
       }
 
-      notification.info('Please approve the FROTH transfer in MetaMask...');
+      notification.info('Please approve the FROTH transfer in your Flow Wallet...');
 
-      // Trigger real MetaMask transaction for FROTH transfer
+      // Trigger Flow Wallet EVM transaction for FROTH transfer
       let txHash;
       try {
         // ERC-20 transfer function signature: transfer(address,uint256)
         const transferFunction = '0xa9059cbb';
-        const treasuryAddress = FLOW_TREASURY_CONFIG.ADDRESS.slice(2).padStart(64, '0');
+        // Use FROTH treasury address (EVM format)
+        const treasuryAddress = FROTH_CONFIG.CONTRACT_ADDRESS.slice(2).padStart(64, '0'); // Use contract address as treasury for now
         const amountInWei = (amount * Math.pow(10, 18)).toString(16).padStart(64, '0');
         const data = transferFunction + treasuryAddress + amountInWei;
 
-        txHash = await window.ethereum.request({
+        txHash = await provider.request({
           method: 'eth_sendTransaction',
           params: [{
             from: evmAddress,
@@ -249,7 +279,7 @@ export default function Navbar() {
           }],
         });
 
-        console.log('✅ FROTH transfer transaction sent:', txHash);
+        console.log('✅ FROTH transfer transaction sent via Flow Wallet:', txHash);
       } catch (txError) {
         if (txError.code === 4001) {
           throw new Error('Transaction rejected by user');
@@ -282,6 +312,64 @@ export default function Navbar() {
       const currentFrothBalance = parseFloat(userFrothBalance || '0');
       const newFrothBalance = (currentFrothBalance + amount).toFixed(2);
       
+      // Save to localStorage with EVM address key for FROTH
+      localStorage.setItem(`userFrothBalance_${evmAddress}`, newFrothBalance);
+      localStorage.setItem('userFrothBalance', newFrothBalance); // Global fallback
+      
+      // Also save with Flow address if available for future compatibility
+      if (address) {
+        localStorage.setItem(`userFrothBalance_${address}`, newFrothBalance);
+      }
+      
+      dispatch(setFrothBalance(newFrothBalance));
+
+      notification.success(`Successfully deposited ${amount} FROTH via MetaMask! TX: ${txHash.slice(0, 8)}...`);
+      setFrothDepositAmount('');
+
+    } catch (error) {
+      console.error('❌ FROTH deposit failed:', error);
+      notification.error(`FROTH deposit failed: ${error.message}`);
+    } finally {
+      setIsFrothDepositing(false);
+    }
+  };
+
+
+
+  // Alternative FROTH deposit using FrothService (Flow Wallet EVM)
+  const handleFrothDepositWithService = async () => {
+    if (isFrothDepositing) {
+      console.log('🚫 FROTH deposit already in progress');
+      return;
+    }
+
+    if (!isConnected || !address) {
+      notification.error('Please connect your Flow Wallet first for FROTH deposits.');
+      return;
+    }
+
+    const amount = parseFloat(frothDepositAmount);
+    if (!amount || amount <= 0) {
+      notification.error('Please enter a valid FROTH deposit amount');
+      return;
+    }
+
+    if (amount < FROTH_CONFIG.MIN_BET) {
+      notification.error(`Minimum FROTH deposit amount is ${FROTH_CONFIG.MIN_BET} FROTH`);
+      return;
+    }
+
+    setIsFrothDepositing(true);
+    console.log('🟡 Starting FROTH deposit with FrothService for:', amount, 'FROTH');
+
+    try {
+      const treasuryAddress = frothService.getTreasuryAddress();
+      const result = await frothService.depositWithFlowWallet(address, amount.toString(), treasuryAddress);
+
+      // Update FROTH balance in localStorage and Redux
+      const currentFrothBalance = parseFloat(userFrothBalance || '0');
+      const newFrothBalance = (currentFrothBalance + amount).toFixed(2);
+      
       // Save to localStorage with Flow address key for consistency
       if (address) {
         localStorage.setItem(`userFrothBalance_${address}`, newFrothBalance);
@@ -290,11 +378,11 @@ export default function Navbar() {
       
       dispatch(setFrothBalance(newFrothBalance));
 
-      notification.success(`Successfully deposited ${amount} FROTH! TX: ${txHash.slice(0, 8)}...`);
+      notification.success(`Successfully deposited ${amount} FROTH via Flow Wallet! TX: ${result.transactionId.slice(0, 8)}...`);
       setFrothDepositAmount('');
 
     } catch (error) {
-      console.error('❌ FROTH deposit failed:', error);
+      console.error('❌ FROTH deposit with service failed:', error);
       notification.error(`FROTH deposit failed: ${error.message}`);
     } finally {
       setIsFrothDepositing(false);
@@ -1543,6 +1631,11 @@ export default function Navbar() {
                     Treasury: {FLOW_TREASURY_CONFIG.ADDRESS.slice(0, 10)}...{FLOW_TREASURY_CONFIG.ADDRESS.slice(-8)}
                   </div>
                 )}
+                {selectedModalToken === 'FROTH' && (
+                  <div className="text-xs text-blue-400 mb-2 p-2 bg-blue-900/20 rounded border border-blue-800/30">
+                    💡 FROTH deposits currently use MetaMask. Flow Wallet EVM support coming soon for unified experience!
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <input
                     type="number"
@@ -1573,7 +1666,7 @@ export default function Navbar() {
                       </>
                     ) : (
                       <>
-                        Deposit
+                        {selectedModalToken === 'FROTH' ? 'Deposit via MetaMask' : 'Deposit'}
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8l-8-8-8 8" />
                         </svg>

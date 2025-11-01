@@ -124,6 +124,39 @@ export const useFlowWallet = () => {
     }
   }, []);
 
+  // Get Flow Wallet EVM provider for FROTH operations
+  const getFlowWalletEVMProvider = useCallback(async () => {
+    try {
+      if (!user.loggedIn) {
+        throw new Error('Flow Wallet not connected');
+      }
+
+      // Flow Wallet has built-in EVM support
+      // Check if Flow Wallet provides EVM functionality
+      if (window.ethereum && window.ethereum.isFlowWallet) {
+        console.log('✅ Using Flow Wallet EVM provider');
+        return window.ethereum;
+      }
+
+      // Alternative: Use Flow Wallet's EVM bridge
+      if (window.fcl && window.fcl.WalletUtils) {
+        console.log('✅ Using Flow Wallet EVM bridge');
+        return window.fcl.WalletUtils.getEVMProvider();
+      }
+
+      // Fallback: Request EVM access from Flow Wallet
+      if (window.ethereum) {
+        console.log('✅ Using available EVM provider (Flow Wallet)');
+        return window.ethereum;
+      }
+
+      throw new Error('Flow Wallet EVM support not available');
+    } catch (error) {
+      console.error('❌ Flow Wallet EVM provider error:', error);
+      throw error;
+    }
+  }, [user.loggedIn]);
+
   // Execute a treasury-sponsored transaction via API
   const executeTreasuryTransaction = useCallback(async (gameType, gameParams) => {
     try {
@@ -311,6 +344,7 @@ export const useFlowWallet = () => {
     disconnect,
     getFlowBalance,
     getFrothBalance,
+    getFlowWalletEVMProvider,
     executeTransaction,
     executeTreasuryTransaction,
     executeScript,

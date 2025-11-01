@@ -14,42 +14,77 @@ class FrothService {
   }
 
   /**
-   * Get Web3 provider for Flow EVM
+   * Get Web3 provider for Flow EVM (prioritize Flow Wallet)
    */
   async getWeb3Provider() {
-    if (typeof window !== 'undefined' && window.ethereum) {
-      // Check if we're on the correct network
-      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-      if (parseInt(chainId, 16) !== this.network.chainId) {
-        // Switch to Flow EVM Mainnet
+    if (typeof window !== 'undefined') {
+      let provider = null;
+
+      console.log('🔍 Checking available providers...');
+      console.log('window.ethereum:', !!window.ethereum);
+      console.log('window.ethereum.isFlowWallet:', window.ethereum?.isFlowWallet);
+      console.log('window.ethereum.isMetaMask:', window.ethereum?.isMetaMask);
+      console.log('window.fcl:', !!window.fcl);
+
+      // Priority 1: Flow Wallet EVM support
+      if (window.ethereum && window.ethereum.isFlowWallet) {
+        console.log('✅ Using Flow Wallet EVM provider');
+        provider = window.ethereum;
+      }
+      // Priority 2: FCL EVM bridge
+      else if (window.fcl && window.fcl.WalletUtils && window.fcl.WalletUtils.getEVMProvider) {
+        console.log('✅ Using Flow Wallet EVM bridge');
         try {
-          await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: `0x${this.network.chainId.toString(16)}` }],
-          });
-        } catch (switchError) {
-          // Network not added, add it
-          if (switchError.code === 4902) {
-            await window.ethereum.request({
-              method: 'wallet_addEthereumChain',
-              params: [{
-                chainId: `0x${this.network.chainId.toString(16)}`,
-                chainName: this.network.name,
-                rpcUrls: [this.network.rpcUrl],
-                blockExplorerUrls: [this.network.blockExplorer],
-                nativeCurrency: {
-                  name: 'FLOW',
-                  symbol: 'FLOW',
-                  decimals: 18
-                }
-              }]
-            });
-          }
+          provider = await window.fcl.WalletUtils.getEVMProvider();
+        } catch (error) {
+          console.warn('⚠️ FCL EVM bridge failed:', error);
         }
       }
-      return window.ethereum;
+      // Priority 3: Check if MetaMask is present and warn user
+      else if (window.ethereum && window.ethereum.isMetaMask) {
+        console.warn('⚠️ MetaMask detected - Flow Wallet EVM not available');
+        throw new Error('Flow Wallet EVM support not detected. Please ensure you are using Flow Wallet with EVM support, not MetaMask.');
+      }
+      // Priority 4: Generic EVM provider (last resort)
+      else if (window.ethereum) {
+        console.log('⚠️ Using generic EVM provider (unknown wallet)');
+        provider = window.ethereum;
+      }
+
+      if (provider) {
+        // Check if we're on the correct network
+        const chainId = await provider.request({ method: 'eth_chainId' });
+        if (parseInt(chainId, 16) !== this.network.chainId) {
+          // Switch to Flow EVM Mainnet
+          try {
+            await provider.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: `0x${this.network.chainId.toString(16)}` }],
+            });
+          } catch (switchError) {
+            // Network not added, add it
+            if (switchError.code === 4902) {
+              await provider.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: `0x${this.network.chainId.toString(16)}`,
+                  chainName: this.network.name,
+                  rpcUrls: [this.network.rpcUrl],
+                  blockExplorerUrls: [this.network.blockExplorer],
+                  nativeCurrency: {
+                    name: 'FLOW',
+                    symbol: 'FLOW',
+                    decimals: 18
+                  }
+                }]
+              });
+            }
+          }
+        }
+        return provider;
+      }
     }
-    throw new Error('MetaMask or compatible wallet not found');
+    throw new Error('Flow Wallet or compatible EVM wallet not found. Please connect your Flow Wallet first.');
   }
 
   /**
@@ -88,7 +123,80 @@ class FrothService {
   }
 
   /**
-   * Deposit FROTH tokens to casino balance (mainnet)
+   * Deposit FROTH tokens using Flow Wallet EVM
+   * @param {string} flowAddress - User's Flow address
+   * @param {string} amount - Amount to deposit
+   * @param {string} treasuryAddress - Treasury EVM address
+   * @returns {Promise<object>} - Deposit result
+   */
+  async depositWithFlowWallet(flowAddress, amount, treasuryAddress) {
+    try {
+      console.log('🟡 Processing FROTH deposit with Flow Wallet:', { flowAddress, amount, treasuryAddress });
+
+      // Get Flow Wallet EVM provider
+      const provider = await this.getWeb3Provider();
+      
+      // Get user's EVM address from Flow Wallet
+      const accounts = await provider.request({ method: 'eth_requestAccounts' });
+      const evmAddress = accounts[0];
+
+      console.log('🔗 Flow Wallet EVM address:', evmAddress);
+
+      // Create transaction to transfer FROTH to treasury
+      const transferAmount = (parseFloat(amount) * Math.pow(10, this.decimals)).toString();
+      
+      // ERC20 transfer function signature
+      const transferData = this.encodeTransferData(treasuryAddress, transferAmount);
+
+      const txParams = {
+        from: evmAddress,
+        to: this.contractAddress,
+        data: transferData,
+        gas: '0x5208', // 21000 gas limit
+      };
+
+      // Send transaction via Flow Wallet
+      const txHash = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [txParams],
+      });
+
+      console.log('✅ FROTH transfer transaction sent:', txHash);
+
+      // Wait for transaction confirmation
+      await this.waitForTransaction(provider, txHash);
+
+      // Call deposit API to update balance
+      const response = await fetch('/api/froth-deposit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userAddress: evmAddress,
+          flowAddress: flowAddress,
+          amount: amount,
+          transactionId: txHash,
+          contractAddress: this.contractAddress
+        })
+      });
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'FROTH deposit failed');
+      }
+
+      console.log('✅ FROTH deposit successful:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ FROTH deposit failed:', error);
+      throw new Error(`FROTH deposit failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Deposit FROTH tokens to casino balance (mainnet) - Legacy method
    * @param {string} userAddress - User's wallet address
    * @param {string} amount - Amount to deposit
    * @param {string} transactionId - Transaction ID for tracking
@@ -265,6 +373,57 @@ class FrothService {
 
 
   /**
+   * Encode ERC20 transfer function data
+   * @param {string} to - Recipient address
+   * @param {string} amount - Amount to transfer (in wei)
+   * @returns {string} - Encoded function data
+   */
+  encodeTransferData(to, amount) {
+    // ERC20 transfer function signature: transfer(address,uint256)
+    const functionSignature = '0xa9059cbb';
+    
+    // Pad address to 32 bytes
+    const paddedAddress = to.replace('0x', '').padStart(64, '0');
+    
+    // Pad amount to 32 bytes
+    const paddedAmount = BigInt(amount).toString(16).padStart(64, '0');
+    
+    return functionSignature + paddedAddress + paddedAmount;
+  }
+
+  /**
+   * Wait for transaction confirmation
+   * @param {object} provider - EVM provider
+   * @param {string} txHash - Transaction hash
+   * @returns {Promise<object>} - Transaction receipt
+   */
+  async waitForTransaction(provider, txHash) {
+    let attempts = 0;
+    const maxAttempts = 30; // 30 seconds timeout
+    
+    while (attempts < maxAttempts) {
+      try {
+        const receipt = await provider.request({
+          method: 'eth_getTransactionReceipt',
+          params: [txHash],
+        });
+        
+        if (receipt) {
+          console.log('✅ Transaction confirmed:', receipt);
+          return receipt;
+        }
+      } catch (error) {
+        console.warn('⚠️ Error checking transaction:', error);
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      attempts++;
+    }
+    
+    throw new Error('Transaction confirmation timeout');
+  }
+
+  /**
    * Format FROTH amount for display
    * @param {string} amount - FROTH amount
    * @returns {string} - Formatted amount
@@ -330,6 +489,15 @@ class FrothService {
       valid: true,
       error: null
     };
+  }
+
+  /**
+   * Get treasury address for FROTH deposits
+   * @returns {string} - Treasury EVM address
+   */
+  getTreasuryAddress() {
+    // Treasury address on Flow EVM for FROTH deposits
+    return process.env.NEXT_PUBLIC_FROTH_TREASURY_ADDRESS || "0x421055ba162a1f697532e79ea9a6852422d311f0993eb880c75110218d7f52c0";
   }
 }
 
