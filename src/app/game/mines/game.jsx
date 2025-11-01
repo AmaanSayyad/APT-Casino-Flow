@@ -10,7 +10,7 @@ import useWindowSize from 'react-use/lib/useWindowSize';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useDispatch, useSelector } from 'react-redux';
-import { setBalance, setFlowBalance } from '@/store/balanceSlice';
+import { setBalance, setFlowBalance, setFrothBalance } from '@/store/balanceSlice';
 import useWalletStatus from '@/hooks/useWalletStatus';
 
 const GRID_SIZES = {
@@ -37,10 +37,10 @@ const SOUNDS = {
   bet: "/sounds/bet.mp3",
 };
 
-const Game = ({ betSettings = {}, onGameStatusChange, onGameComplete }) => {
+const Game = ({ betSettings = {}, onGameStatusChange, onGameComplete, selectedToken = 'FLOW' }) => {
   // Redux integration
   const dispatch = useDispatch();
-  const { userBalance, userFlowBalance } = useSelector((state) => state.balance);
+  const { userBalance, userFlowBalance, userFrothBalance } = useSelector((state) => state.balance);
   const { isConnected } = useWalletStatus();
 
   // Game Settings
@@ -336,24 +336,35 @@ const Game = ({ betSettings = {}, onGameStatusChange, onGameComplete }) => {
           return;
         }
         
-        // Check Redux Flow balance (balance is already in FLOW)
-        const currentBalance = parseFloat(userFlowBalance || '0');
+        // Check balance based on selected token
+        const currentBalance = selectedToken === 'FLOW' 
+          ? parseFloat(userFlowBalance || '0')
+          : parseFloat(userFrothBalance || '0');
         
         if (currentBalance < parseFloat(settings.betAmount)) {
-          toast.error(`Insufficient balance. You have ${currentBalance.toFixed(5)} FLOW but need ${parseFloat(settings.betAmount).toFixed(5)} FLOW`);
+          const decimals = selectedToken === 'FLOW' ? 5 : 2;
+          toast.error(`Insufficient balance. You have ${currentBalance.toFixed(decimals)} ${selectedToken} but need ${parseFloat(settings.betAmount).toFixed(decimals)} ${selectedToken}`);
           return;
         }
 
         try {
-          // Deduct bet amount from Redux Flow balance
-          const newBalance = (parseFloat(userFlowBalance || '0') - parseFloat(settings.betAmount)).toString();
-          dispatch(setFlowBalance(newBalance));
+          // Deduct bet amount from selected token balance
+          const betAmount = parseFloat(settings.betAmount);
+          let newBalance;
+          
+          if (selectedToken === 'FLOW') {
+            newBalance = (parseFloat(userFlowBalance || '0') - betAmount).toString();
+            dispatch(setFlowBalance(newBalance));
+          } else {
+            newBalance = (parseFloat(userFrothBalance || '0') - betAmount).toFixed(2);
+            dispatch(setFrothBalance(newBalance));
+          }
           
           console.log('=== STARTING MINES BET WITH REDUX BALANCE ===');
-          console.log('Bet amount (FLOW):', settings.betAmount);
-          console.log('Current balance (FLOW):', currentBalance);
+          console.log('Bet amount:', settings.betAmount, selectedToken);
+          console.log('Current balance:', currentBalance, selectedToken);
           console.log('Mines count:', settings.mines);
-          console.log('Balance deducted. New balance:', parseFloat(newBalance).toFixed(5), 'FLOW');
+          console.log('Balance deducted. New balance:', parseFloat(newBalance).toFixed(selectedToken === 'FLOW' ? 5 : 2), selectedToken);
           
           // Start the game immediately
           setIsPlaying(true);
@@ -657,20 +668,28 @@ const Game = ({ betSettings = {}, onGameStatusChange, onGameComplete }) => {
       
       // Cashout is just a local operation - no blockchain transaction needed
       // The actual payout was already handled in the initial bet transaction
-              toast.success(`Cashed out: ${payout.toFixed(5)} FLOW (${multiplier.toFixed(2)}x)`);
+      const decimals = selectedToken === 'FLOW' ? 5 : 2;
+      toast.success(`Cashed out: ${payout.toFixed(decimals)} ${selectedToken} (${multiplier.toFixed(2)}x)`);
       playSound('cashout');
       
-      // Update user Flow balance in Redux store (add payout to current balance)
-      const currentBalance = parseFloat(userFlowBalance || '0');
+      // Update balance in Redux store based on selected token
+      const currentBalance = selectedToken === 'FLOW' 
+        ? parseFloat(userFlowBalance || '0')
+        : parseFloat(userFrothBalance || '0');
       const newBalance = currentBalance + payout;
       
       console.log('Balance update:', {
-        currentBalance: currentBalance.toFixed(5),
-        payout: payout.toFixed(5),
-        newBalance: newBalance.toFixed(5)
+        currentBalance: currentBalance.toFixed(decimals),
+        payout: payout.toFixed(decimals),
+        newBalance: newBalance.toFixed(decimals),
+        token: selectedToken
       });
       
-      dispatch(setFlowBalance(newBalance.toString()));
+      if (selectedToken === 'FLOW') {
+        dispatch(setFlowBalance(newBalance.toString()));
+      } else {
+        dispatch(setFrothBalance(newBalance.toFixed(2)));
+      }
       
       // Show confetti on any profitable cashout
       if (payout > 0) {

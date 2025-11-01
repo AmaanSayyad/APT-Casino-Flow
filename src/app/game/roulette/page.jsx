@@ -33,12 +33,15 @@ import WinProbabilities from './components/WinProbabilities';
 import RouletteHistory from './components/RouletteHistory';
 // Removed wagmi import - using Flow wallet instead
 import { useSelector, useDispatch } from 'react-redux';
-import { setBalance, setFlowBalance, setLoading, loadBalanceFromStorage } from '@/store/balanceSlice';
+import { setBalance, setFlowBalance, setFrothBalance, setLoading, loadBalanceFromStorage } from '@/store/balanceSlice';
 // Flow VRF service imported below
 import { flowVRFService } from '@/services/FlowVRFService';
 import { useFlowWallet } from '@/hooks/useFlowWallet';
 import { useNotification } from '@/components/NotificationSystem';
 import { getTreasuryTransactionCode, buildRouletteArgs } from '@/config/treasuryConfig';
+import TokenSelector from '@/components/TokenSelector';
+import { gamePaymentService } from '@/services/GamePaymentService';
+import { addTestFrothBalance, FROTH_TEST_AMOUNTS } from '@/utils/frothTestUtils';
 
 // Flow client functions will be added here when needed
 
@@ -1213,10 +1216,13 @@ export default function GameRoulette() {
   const isWalletReady = isConnected && address;
   const [realBalance, setRealBalance] = useState('0');
   const { balance: mockBalance } = useToken(address); // Mock balance for compatibility
+  
+  // Token selection state
+  const [selectedToken, setSelectedToken] = useState('FLOW'); // Default to FLOW
 
-  // Use Flow balance from Redux store
-  const { userFlowBalance } = useSelector((state) => state.balance);
-  const balance = userFlowBalance || '0';
+  // Use Flow and FROTH balance from Redux store
+  const { userFlowBalance, userFrothBalance } = useSelector((state) => state.balance);
+  const balance = selectedToken === 'FLOW' ? (userFlowBalance || '0') : (userFrothBalance || '0');
   const HOUSE_ADDR = CASINO_MODULE_ADDRESS;
 
   // Function to fetch real FLOW balance will be defined after useSelector
@@ -1620,12 +1626,14 @@ export default function GameRoulette() {
       return;
     }
 
-    // Check Redux Flow balance instead of regular balance
-    const currentBalance = parseFloat(userFlowBalance || '0'); // Use Flow balance for Flow games
+    // Check balance based on selected token
+    const currentBalance = selectedToken === 'FLOW' 
+      ? parseFloat(userFlowBalance || '0') 
+      : parseFloat(userFrothBalance || '0');
     const totalBetAmount = total;
 
     if (currentBalance < totalBetAmount) {
-      alert(`Insufficient balance. You have ${formatBalance(currentBalance)} FLOW but need ${formatBalance(totalBetAmount)} FLOW`);
+      alert(`Insufficient balance. You have ${formatBalance(currentBalance)} ${selectedToken} but need ${formatBalance(totalBetAmount)} ${selectedToken}`);
       return;
     }
 
@@ -1644,17 +1652,21 @@ export default function GameRoulette() {
       // Store original Flow balance for calculation
       const originalBalance = parseFloat(userFlowBalance || '0');
 
-      // Check if user has enough Flow balance
+      // Check if user has enough balance for selected token
       if (originalBalance < totalBetAmount) {
-        alert(`Insufficient balance. You have ${formatBalance(originalBalance)} FLOW but need ${formatBalance(totalBetAmount)} FLOW`);
+        alert(`Insufficient balance. You have ${formatBalance(originalBalance)} ${selectedToken} but need ${formatBalance(totalBetAmount)} ${selectedToken}`);
         setSubmitDisabled(false);
         setWheelSpinning(false);
         return;
       }
 
-      // Deduct bet amount immediately from Flow balance
+      // Deduct bet amount immediately from selected token balance
       const balanceAfterBet = originalBalance - totalBetAmount;
-      dispatch(setFlowBalance(formatBalance(balanceAfterBet)));
+      if (selectedToken === 'FLOW') {
+        dispatch(setFlowBalance(formatBalance(balanceAfterBet)));
+      } else {
+        dispatch(setFrothBalance(formatBalance(balanceAfterBet)));
+      }
 
       console.log("Balance deducted:", {
         originalBalance: formatBalance(originalBalance),
@@ -2022,7 +2034,11 @@ export default function GameRoulette() {
           // Calculate net result and update balance
         const netResult = totalPayout > 0 ? totalPayout : 0;
         const finalBalance = balanceAfterBet + netResult;
-        dispatch(setFlowBalance(formatBalance(finalBalance)));
+        if (selectedToken === 'FLOW') {
+          dispatch(setFlowBalance(formatBalance(finalBalance)));
+        } else {
+          dispatch(setFrothBalance(formatBalance(finalBalance)));
+        }
 
         console.log("Balance update:", {
           originalBalance: formatBalance(originalBalance),
@@ -2070,8 +2086,8 @@ export default function GameRoulette() {
           // Show result notification
           if (netResult > 0) {
             const winMessage = winningBets.length === 1
-              ? `🎉 WINNER! ${winningBets[0].name} - You won ${formatBalance(netResult - totalBetAmount)} FLOW!`
-              : `🎉 MULTIPLE WINNERS! ${winningBets.length} bets won - Total: ${formatBalance(netResult - totalBetAmount)} FLOW!`;
+              ? `🎉 WINNER! ${winningBets[0].name} - You won ${formatBalance(netResult - totalBetAmount)} ${selectedToken}!`
+              : `🎉 MULTIPLE WINNERS! ${winningBets.length} bets won - Total: ${formatBalance(netResult - totalBetAmount)} ${selectedToken}!`;
             
             notification.success(winMessage);
           } else {
@@ -2137,7 +2153,11 @@ export default function GameRoulette() {
           // Calculate net result and update balance
           const netResult = totalPayout > 0 ? totalPayout : 0;
           const finalBalance = balanceAfterBet + netResult;
-          dispatch(setFlowBalance(formatBalance(finalBalance)));
+          if (selectedToken === 'FLOW') {
+            dispatch(setFlowBalance(formatBalance(finalBalance)));
+          } else {
+            dispatch(setFrothBalance(formatBalance(finalBalance)));
+          }
 
           // Create fallback betting history entry
           const newBet = {
@@ -3220,6 +3240,16 @@ export default function GameRoulette() {
               maxWidth: { xs: isSmallScreen && !isPortrait ? '300px' : '400px', md: 'none' },
               minWidth: isSmallScreen && !isPortrait ? '250px' : 'auto',
             }}>
+              {/* Token Selector */}
+              <Box sx={{ mb: 2 }}>
+                <TokenSelector
+                  selectedToken={selectedToken}
+                  onTokenChange={setSelectedToken}
+                  showBalances={true}
+                  size="medium"
+                />
+              </Box>
+
               <TextFieldCurrency
                 label="Bet Amount"
                 variant="standard"
@@ -3230,12 +3260,15 @@ export default function GameRoulette() {
               />
 
               <Typography color="white" sx={{ opacity: 0.8 }}>
-                Current Bet Total: {formatBalance(total)} FLOW
+                Current Bet Total: {formatBalance(total)} {selectedToken}
               </Typography>
 
               {/* Quick Bet Buttons */}
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
-                {[100, 250, 500, 750, 1000, 5000].map(amount => (
+                {(selectedToken === 'FLOW' 
+                  ? [0.1, 0.5, 1, 2.5, 5, 10] 
+                  : [1000, 2500, 5000, 10000, 25000, 50000]
+                ).map(amount => (
                   <Button
                     key={amount}
                     onClick={() => setBet(amount)}

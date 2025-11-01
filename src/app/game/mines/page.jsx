@@ -19,6 +19,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useFlowWallet } from '@/hooks/useFlowWallet';
 import FlowConnectWalletButton from '@/components/FlowConnectWalletButton';
+import TokenSelector from '@/components/TokenSelector';
+import { useSelector } from 'react-redux';
 import Image from "next/image";
 import "./mines.css";
 import GameDetail from "@/components/GameDetail";
@@ -28,6 +30,9 @@ import AISettingsModal from "./components/AISettingsModal";
 import { flowVRFService } from '@/services/FlowVRFService';
 
 export default function Mines() {
+  // Redux state
+  const { userFlowBalance, userFrothBalance } = useSelector((state) => state.balance);
+  
   // Game State
   const [betSettings, setBetSettings] = useState({});
   const [activeTab, setActiveTab] = useState("Manual");
@@ -36,6 +41,7 @@ export default function Mines() {
   const [isStatsExpanded, setIsStatsExpanded] = useState(false);
   const [gameStatus, setGameStatus] = useState({ isPlaying: false, hasPlacedBet: false });
   const [gameHistory, setGameHistory] = useState([]);
+  const [selectedToken, setSelectedToken] = useState('FLOW'); // Token selection state
   
   // AI Auto Betting State
   const [isAIActive, setIsAIActive] = useState(false);
@@ -420,6 +426,16 @@ export default function Mines() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
         >
+          {/* Token Selector */}
+          <div className="mb-6">
+            <TokenSelector
+              selectedToken={selectedToken}
+              onTokenChange={setSelectedToken}
+              showBalances={true}
+              size="medium"
+            />
+          </div>
+          
           <Tabs tabs={tabs} onTabChange={handleTabChange} />
         </motion.div>
       </div>
@@ -443,7 +459,7 @@ export default function Mines() {
           transition={{ duration: 0.3 }}
           className="relative z-10"
         >
-          <Game betSettings={betSettings} onGameStatusChange={setGameStatus} onGameComplete={handleGameComplete} />
+          <Game betSettings={betSettings} onGameStatusChange={setGameStatus} onGameComplete={handleGameComplete} selectedToken={selectedToken} />
         </motion.div>
       </motion.div>
     </div>

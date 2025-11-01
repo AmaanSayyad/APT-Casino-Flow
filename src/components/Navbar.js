@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useSelector, useDispatch } from 'react-redux';
-import { setFlowBalance, addToFlowBalance, subtractFromFlowBalance, loadFlowBalanceFromStorage } from '@/store/balanceSlice';
+import { setFlowBalance, addToFlowBalance, subtractFromFlowBalance, loadFlowBalanceFromStorage, setFrothBalance, loadFrothBalanceFromStorage } from '@/store/balanceSlice';
 import FlowConnectWalletButton from "./FlowConnectWalletButton";
 import WithdrawModal from "./WithdrawModal";
 import LiveChat from "./LiveChat";
@@ -17,6 +17,7 @@ import { debugFlowBalance } from '../utils/flowBalanceCheck';
 import { testFlowConnection, withRetry } from '../config/flow';
 import { resetFlowBalance, isFlowBalanceCorrupted } from '../utils/resetFlowBalance';
 import { checkTreasuryBalance, checkLocalTreasuryBalance } from '../utils/checkTreasuryBalance';
+import TokenSelector from './TokenSelector';
 
 import { useNotification } from './NotificationSystem';
 
@@ -115,22 +116,212 @@ export default function Navbar() {
   const isDev = process.env.NODE_ENV === 'development';
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const dispatch = useDispatch();
-  const { userFlowBalance, isLoading: isLoadingBalance } = useSelector((state) => state.balance);
+  const { userFlowBalance, userFrothBalance, isLoading: isLoadingBalance } = useSelector((state) => state.balance);
   const [walletNetworkName, setWalletNetworkName] = useState("");
 
-  // Flow balance management
+  // Balance management
   const [showBalanceModal, setShowBalanceModal] = useState(false);
+  const [selectedModalToken, setSelectedModalToken] = useState('FLOW'); // Token selection for modal
   const [flowDepositAmount, setFlowDepositAmount] = useState("");
   const [isFlowDepositing, setIsFlowDepositing] = useState(false);
   const [flowWithdrawAmount, setFlowWithdrawAmount] = useState("0");
   const [isFlowWithdrawing, setIsFlowWithdrawing] = useState(false);
   
+  // FROTH balance management
+  const [frothDepositAmount, setFrothDepositAmount] = useState("");
+  const [isFrothDepositing, setIsFrothDepositing] = useState(false);
+  const [frothWithdrawAmount, setFrothWithdrawAmount] = useState("0");
+  const [isFrothWithdrawing, setIsFrothWithdrawing] = useState(false);
+  
   const [showLiveChat, setShowLiveChat] = useState(false);
+
+  // Handle FROTH deposit (mainnet Flow EVM)
+  const handleFrothDeposit = async () => {
+    if (isFrothDepositing) {
+      console.log('🚫 FROTH deposit already in progress');
+      return;
+    }
+
+    if (!isConnected || !address) {
+      notification.error('Please connect your wallet first');
+      return;
+    }
+
+    const amount = parseFloat(frothDepositAmount);
+    if (!amount || amount <= 0) {
+      notification.error('Please enter a valid FROTH deposit amount');
+      return;
+    }
+
+    if (amount < FROTH_CONFIG.MIN_BET) {
+      notification.error(`Minimum FROTH deposit amount is ${FROTH_CONFIG.MIN_BET} FROTH`);
+      return;
+    }
+
+    setIsFrothDepositing(true);
+    console.log('🟡 Starting FROTH deposit process on mainnet for:', amount, 'FROTH');
+
+    try {
+      // Check if user has MetaMask and is on Flow EVM
+      if (!window.ethereum) {
+        throw new Error('MetaMask or compatible wallet required for FROTH deposits');
+      }
+
+      // Switch to Flow EVM Mainnet if needed
+      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      if (parseInt(chainId, 16) !== FROTH_CONFIG.NETWORK.chainId) {
+        notification.info('Switching to Flow EVM Mainnet...');
+        
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: `0x${FROTH_CONFIG.NETWORK.chainId.toString(16)}` }],
+          });
+        } catch (switchError) {
+          if (switchError.code === 4902) {
+            // Network not added, add it
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: `0x${FROTH_CONFIG.NETWORK.chainId.toString(16)}`,
+                chainName: FROTH_CONFIG.NETWORK.name,
+                rpcUrls: [FROTH_CONFIG.NETWORK.rpcUrl],
+                blockExplorerUrls: [FROTH_CONFIG.NETWORK.blockExplorer],
+                nativeCurrency: {
+                  name: 'FLOW',
+                  symbol: 'FLOW',
+                  decimals: 18
+                }
+              }]
+            });
+          } else {
+            throw switchError;
+          }
+        }
+      }
+
+      notification.info('Please approve the FROTH transfer in your wallet...');
+
+      // In production, this would trigger a MetaMask transaction
+      // For now, we'll simulate the process
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      // Mock transaction hash
+      const mockTxHash = `0x${Math.random().toString(16).substr(2, 64)}`;
+
+      // Call deposit API
+      const result = await fetch('/api/froth-deposit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userAddress: address,
+          amount: amount,
+          transactionId: mockTxHash,
+          contractAddress: FROTH_CONFIG.CONTRACT_ADDRESS
+        })
+      });
+
+      const depositResult = await result.json();
+
+      if (!depositResult.success) {
+        throw new Error(depositResult.error || 'FROTH deposit failed');
+      }
+
+      // Update FROTH balance
+      dispatch(setFrothBalance(depositResult.newBalance));
+
+      notification.success(`Successfully deposited ${amount} FROTH! TX: ${mockTxHash.slice(0, 8)}...`);
+      setFrothDepositAmount('');
+
+    } catch (error) {
+      console.error('❌ FROTH deposit failed:', error);
+      notification.error(`FROTH deposit failed: ${error.message}`);
+    } finally {
+      setIsFrothDepositing(false);
+    }
+  };
+
+  // Handle FROTH withdraw (mainnet Flow EVM)
+  const handleFrothWithdraw = async () => {
+    if (isFrothWithdrawing) {
+      console.log('🚫 FROTH withdraw already in progress');
+      return;
+    }
+
+    if (!isConnected || !address) {
+      notification.error('Please connect your wallet first');
+      return;
+    }
+
+    const amount = parseFloat(frothWithdrawAmount);
+    if (!amount || amount <= 0) {
+      notification.error('Please enter a valid FROTH withdraw amount');
+      return;
+    }
+
+    const currentFrothBalance = parseFloat(userFrothBalance || '0');
+    if (amount > currentFrothBalance) {
+      notification.error(`Insufficient FROTH balance. Available: ${currentFrothBalance} FROTH`);
+      return;
+    }
+
+    setIsFrothWithdrawing(true);
+    console.log('🟡 Starting FROTH withdraw process on mainnet for:', amount, 'FROTH');
+
+    try {
+      notification.info('Processing FROTH withdrawal on Flow EVM Mainnet...');
+
+      // Call withdrawal API
+      const result = await fetch('/api/froth-withdraw', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userAddress: address,
+          amount: amount,
+          token: 'FROTH',
+          contractAddress: FROTH_CONFIG.CONTRACT_ADDRESS
+        })
+      });
+
+      const withdrawResult = await result.json();
+
+      if (!withdrawResult.success) {
+        throw new Error(withdrawResult.error || 'FROTH withdrawal failed');
+      }
+
+      // Update FROTH balance
+      dispatch(setFrothBalance(withdrawResult.newBalance));
+
+      notification.success(`Successfully withdrew ${amount} FROTH! TX: ${withdrawResult.transactionHash.slice(0, 8)}...`);
+      setFrothWithdrawAmount('0');
+
+    } catch (error) {
+      console.error('❌ FROTH withdraw failed:', error);
+      notification.error(`FROTH withdraw failed: ${error.message}`);
+    } finally {
+      setIsFrothWithdrawing(false);
+    }
+  };
 
   // Format Flow balance for display
   const formatFlowBalance = (balance) => {
     const numBalance = parseFloat(balance || '0');
     return numBalance === 0 ? '0' : numBalance.toFixed(5);
+  };
+
+  // Format FROTH balance for display
+  const formatFrothBalance = (balance) => {
+    const numBalance = parseFloat(balance || '0');
+    if (numBalance >= 1000000) {
+      return (numBalance / 1000000).toFixed(2) + 'M';
+    } else if (numBalance >= 1000) {
+      return (numBalance / 1000).toFixed(2) + 'K';
+    }
+    return numBalance === 0 ? '0' : numBalance.toFixed(2);
   };
 
 
@@ -142,6 +333,7 @@ export default function Navbar() {
     isDisconnecting, 
     error: walletError,
     getFlowBalance,
+    getFrothBalance,
     transferToTreasury
   } = useFlowWallet();
   const isWalletReady = isConnected && address;
@@ -221,12 +413,34 @@ export default function Navbar() {
     }
   };
 
+  // Load FROTH balance
+  const loadFrothBalance = async () => {
+    try {
+      // Load FROTH balance from localStorage
+      const localFrothBalance = localStorage.getItem('userFrothBalance');
+      console.log('Loading FROTH balance from localStorage:', localFrothBalance);
+      
+      if (localFrothBalance && parseFloat(localFrothBalance) >= 0) {
+        dispatch(setFrothBalance(localFrothBalance));
+        console.log('FROTH balance loaded from localStorage:', localFrothBalance);
+      } else {
+        dispatch(setFrothBalance("0"));
+      }
+      
+    } catch (error) {
+      console.error('Error loading FROTH balance:', error);
+      dispatch(setFrothBalance("0"));
+    }
+  };
+
 
   // Load balance when wallet connects
   useEffect(() => {
     if (isWalletReady && address) {
       // Load Flow treasury balance
       loadFlowBalance();
+      // Load FROTH balance
+      loadFrothBalance();
     }
   }, [isWalletReady, address]);
   
@@ -991,20 +1205,33 @@ export default function Navbar() {
             {/* User Balance Display */}
             {isWalletReady && (
               <div className="flex items-center space-x-3">
+                {/* FLOW Balance */}
                 <div className="bg-gradient-to-r from-green-900/20 to-green-800/10 rounded-lg border border-green-800/30 px-3 py-2">
                   <div className="flex items-center space-x-2">
-                    <span className="text-xs text-gray-300">Balance:</span>
+                    <span className="text-xs text-gray-300">FLOW:</span>
                     <span className="text-sm text-blue-300 font-medium">
-                      {isLoadingBalance ? 'Loading...' : `${formatFlowBalance(userFlowBalance)} FLOW`}
+                      {isLoadingBalance ? 'Loading...' : formatFlowBalance(userFlowBalance)}
                     </span>
-                    <button
-                      onClick={() => setShowBalanceModal(true)}
-                      className="ml-2 text-xs bg-green-600/30 hover:bg-green-500/30 text-green-300 px-2 py-1 rounded transition-colors"
-                    >
-                      Manage
-                    </button>
                   </div>
                 </div>
+                
+                {/* FROTH Balance */}
+                <div className="bg-gradient-to-r from-orange-900/20 to-orange-800/10 rounded-lg border border-orange-800/30 px-3 py-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-gray-300">FROTH:</span>
+                    <span className="text-sm text-orange-300 font-medium">
+                      {isLoadingBalance ? 'Loading...' : formatFrothBalance(userFrothBalance)}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Manage Button */}
+                <button
+                  onClick={() => setShowBalanceModal(true)}
+                  className="text-xs bg-purple-600/30 hover:bg-purple-500/30 text-purple-300 px-3 py-2 rounded-lg transition-colors border border-purple-500/30"
+                >
+                  Manage
+                </button>
               </div>
             )}
             
@@ -1126,7 +1353,7 @@ export default function Navbar() {
               aria-modal="true"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-white">FLOW Treasury</h3>
+                <h3 className="text-lg font-semibold text-white">Balance Management</h3>
                 <button
                   onClick={() => setShowBalanceModal(false)}
                   className="text-gray-400 hover:text-white transition-colors"
@@ -1137,39 +1364,70 @@ export default function Navbar() {
                 </button>
               </div>
               
+              {/* Token Selector */}
+              <div className="mb-4">
+                <TokenSelector
+                  selectedToken={selectedModalToken}
+                  onTokenChange={setSelectedModalToken}
+                  showBalances={true}
+                  size="medium"
+                />
+              </div>
+              
               {/* Current Balance */}
               <div className="mb-4">
-                <div className="p-3 bg-gradient-to-r from-blue-900/20 to-blue-800/10 rounded-lg border border-blue-800/30">
+                <div className={`p-3 rounded-lg border ${
+                  selectedModalToken === 'FLOW' 
+                    ? 'bg-gradient-to-r from-blue-900/20 to-blue-800/10 border-blue-800/30'
+                    : 'bg-gradient-to-r from-orange-900/20 to-orange-800/10 border-orange-800/30'
+                }`}>
                   <span className="text-sm text-gray-300">Current Balance:</span>
-                  <div className="text-lg text-blue-300 font-bold">
-                    {isLoadingBalance ? 'Loading...' : `${formatFlowBalance(userFlowBalance)} FLOW`}
+                  <div className={`text-lg font-bold ${
+                    selectedModalToken === 'FLOW' ? 'text-blue-300' : 'text-orange-300'
+                  }`}>
+                    {isLoadingBalance ? 'Loading...' : 
+                      selectedModalToken === 'FLOW' 
+                        ? `${formatFlowBalance(userFlowBalance)} FLOW`
+                        : `${formatFrothBalance(userFrothBalance)} FROTH`
+                    }
                   </div>
                 </div>
               </div>
               
-              {/* Flow Deposit Section */}
+              {/* Deposit Section */}
               <div className="mb-6">
-                <h4 className="text-sm font-medium text-white mb-2">Deposit FLOW to Treasury</h4>
-                <div className="text-xs text-gray-400 mb-2">
-                  Treasury: {FLOW_TREASURY_CONFIG.ADDRESS.slice(0, 10)}...{FLOW_TREASURY_CONFIG.ADDRESS.slice(-8)}
-                </div>
+                <h4 className="text-sm font-medium text-white mb-2">
+                  Deposit {selectedModalToken} to Casino
+                </h4>
+                {selectedModalToken === 'FLOW' && (
+                  <div className="text-xs text-gray-400 mb-2">
+                    Treasury: {FLOW_TREASURY_CONFIG.ADDRESS.slice(0, 10)}...{FLOW_TREASURY_CONFIG.ADDRESS.slice(-8)}
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <input
                     type="number"
-                    value={flowDepositAmount}
-                    onChange={(e) => setFlowDepositAmount(e.target.value)}
-                    placeholder="Enter FLOW amount"
+                    value={selectedModalToken === 'FLOW' ? flowDepositAmount : frothDepositAmount}
+                    onChange={(e) => selectedModalToken === 'FLOW' 
+                      ? setFlowDepositAmount(e.target.value)
+                      : setFrothDepositAmount(e.target.value)
+                    }
+                    placeholder={`Enter ${selectedModalToken} amount`}
                     className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/25"
                     min="0"
-                    step="0.00000001"
-                    disabled={isFlowDepositing}
+                    step={selectedModalToken === 'FLOW' ? "0.00000001" : "1"}
+                    disabled={selectedModalToken === 'FLOW' ? isFlowDepositing : isFrothDepositing}
                   />
                   <button
-                    onClick={handleFlowDeposit}
-                    disabled={!isConnected || !flowDepositAmount || parseFloat(flowDepositAmount) <= 0 || isFlowDepositing}
+                    onClick={selectedModalToken === 'FLOW' ? handleFlowDeposit : handleFrothDeposit}
+                    disabled={
+                      selectedModalToken === 'FLOW' 
+                        ? (!isConnected || !flowDepositAmount || parseFloat(flowDepositAmount) <= 0 || isFlowDepositing)
+                        : (!frothDepositAmount || parseFloat(frothDepositAmount) <= 0 || isFrothDepositing)
+                    }
                     className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white rounded font-medium transition-colors flex items-center gap-2"
                   >
-                    {isFlowDepositing ? (
+                    {(selectedModalToken === 'FLOW' ? isFlowDepositing : isFrothDepositing) ? (
                       <>
                         <div className="animate-spin w-4 h-4 border-2 border-white/20 border-t-white rounded-full"></div>
                         Depositing...
@@ -1185,44 +1443,59 @@ export default function Navbar() {
                   </button>
                 </div>
                 <p className="text-xs text-gray-400 mt-1">
-                  Transfer FLOW from your wallet to house balance for gaming
+                  {selectedModalToken === 'FLOW' 
+                    ? 'Transfer FLOW from your wallet to casino balance for gaming'
+                    : 'Transfer FROTH tokens from your wallet to casino balance for gaming'
+                  }
                 </p>
                 {/* Quick Deposit Buttons */}
                 <div className="flex gap-1 mt-2">
-                  {[100, 500, 1000, 5000].map((amount) => (
+                  {(selectedModalToken === 'FLOW' 
+                    ? [0.1, 1, 5, 10] 
+                    : [1000, 5000, 25000, 100000]
+                  ).map((amount) => (
                     <button
                       key={amount}
-                      onClick={() => setFlowDepositAmount(amount.toString())}
+                      onClick={() => selectedModalToken === 'FLOW' 
+                        ? setFlowDepositAmount(amount.toString())
+                        : setFrothDepositAmount(amount.toString())
+                      }
                       className="flex-1 px-2 py-1 text-xs bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 rounded transition-colors"
-                      disabled={isFlowDepositing}
+                      disabled={selectedModalToken === 'FLOW' ? isFlowDepositing : isFrothDepositing}
                     >
-                      {amount} FLOW
+                      {selectedModalToken === 'FLOW' ? `${amount} FLOW` : `${amount.toLocaleString()} FROTH`}
                     </button>
                   ))}
                 </div>
-                
               </div>
 
               {/* Withdraw Section */}
               <div className="mb-4">
-                <h4 className="text-sm font-medium text-white mb-2">Withdraw FLOW</h4>
+                <h4 className="text-sm font-medium text-white mb-2">Withdraw {selectedModalToken}</h4>
                 <div className="flex gap-2 mb-2">
                   <input
                     type="number"
-                    value={flowWithdrawAmount}
-                    onChange={(e) => setFlowWithdrawAmount(e.target.value)}
+                    value={selectedModalToken === 'FLOW' ? flowWithdrawAmount : frothWithdrawAmount}
+                    onChange={(e) => selectedModalToken === 'FLOW' 
+                      ? setFlowWithdrawAmount(e.target.value)
+                      : setFrothWithdrawAmount(e.target.value)
+                    }
                     placeholder="Enter amount to withdraw"
                     className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-600/50 rounded text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/25"
                     min="0"
-                    step="0.00000001"
-                    disabled={isFlowWithdrawing}
+                    step={selectedModalToken === 'FLOW' ? "0.00000001" : "1"}
+                    disabled={selectedModalToken === 'FLOW' ? isFlowWithdrawing : isFrothWithdrawing}
                   />
                   <button
-                    onClick={handleFlowWithdraw}
-                    disabled={!isConnected || parseFloat(userFlowBalance || '0') <= 0 || isFlowWithdrawing || !flowWithdrawAmount || parseFloat(flowWithdrawAmount) <= 0}
+                    onClick={selectedModalToken === 'FLOW' ? handleFlowWithdraw : handleFrothWithdraw}
+                    disabled={
+                      selectedModalToken === 'FLOW'
+                        ? (!isConnected || parseFloat(userFlowBalance || '0') <= 0 || isFlowWithdrawing || !flowWithdrawAmount || parseFloat(flowWithdrawAmount) <= 0)
+                        : (parseFloat(userFrothBalance || '0') <= 0 || isFrothWithdrawing || !frothWithdrawAmount || parseFloat(frothWithdrawAmount) <= 0)
+                    }
                     className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white rounded font-medium transition-colors flex items-center gap-2"
                   >
-                    {isFlowWithdrawing ? (
+                    {(selectedModalToken === 'FLOW' ? isFlowWithdrawing : isFrothWithdrawing) ? (
                       <>
                         <div className="animate-spin w-4 h-4 border-2 border-white/20 border-t-white rounded-full"></div>
                         Processing...
@@ -1238,15 +1511,29 @@ export default function Navbar() {
                   </button>
                 </div>
                 <button
-                  onClick={() => setFlowWithdrawAmount(userFlowBalance || '0')}
-                  disabled={!isConnected || parseFloat(userFlowBalance || '0') <= 0 || isFlowWithdrawing}
+                  onClick={() => selectedModalToken === 'FLOW' 
+                    ? setFlowWithdrawAmount(userFlowBalance || '0')
+                    : setFrothWithdrawAmount(userFrothBalance || '0')
+                  }
+                  disabled={
+                    selectedModalToken === 'FLOW'
+                      ? (!isConnected || parseFloat(userFlowBalance || '0') <= 0 || isFlowWithdrawing)
+                      : (parseFloat(userFrothBalance || '0') <= 0 || isFrothWithdrawing)
+                  }
                   className="w-full px-4 py-2 bg-gray-700/50 hover:bg-gray-600/50 disabled:bg-gray-800/50 disabled:cursor-not-allowed text-gray-300 rounded text-sm transition-colors"
                 >
-                  Withdraw All ({formatFlowBalance(userFlowBalance)} FLOW)
+                  Withdraw All ({selectedModalToken === 'FLOW' 
+                    ? `${formatFlowBalance(userFlowBalance)} FLOW`
+                    : `${formatFrothBalance(userFrothBalance)} FROTH`
+                  })
                 </button>
-                {isConnected && parseFloat(userFlowBalance || '0') > 0 && (
+                {((selectedModalToken === 'FLOW' && isConnected && parseFloat(userFlowBalance || '0') > 0) ||
+                  (selectedModalToken === 'FROTH' && parseFloat(userFrothBalance || '0') > 0)) && (
                   <p className="text-xs text-gray-400 mt-1 text-center">
-                    Available: {formatFlowBalance(userFlowBalance)} FLOW
+                    Available: {selectedModalToken === 'FLOW' 
+                      ? `${formatFlowBalance(userFlowBalance)} FLOW`
+                      : `${formatFrothBalance(userFrothBalance)} FROTH`
+                    }
                   </p>
                 )}
               </div>

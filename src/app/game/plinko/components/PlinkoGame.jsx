@@ -2,14 +2,14 @@
 import { useState, forwardRef, useImperativeHandle, useCallback, useEffect, useRef } from "react";
 import Matter from 'matter-js';
 import { useSelector, useDispatch } from 'react-redux';
-import { setBalance, setFlowBalance, addToBalance, subtractFromBalance } from '@/store/balanceSlice';
+import { setBalance, setFlowBalance, setFrothBalance, addToBalance, subtractFromBalance, addToFrothBalance } from '@/store/balanceSlice';
 import { flowVRFService } from '@/services/FlowVRFService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaPlay, FaPause, FaRedo, FaCog, FaInfoCircle } from 'react-icons/fa';
 
-const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChange, betAmount = 0, onBetHistoryChange }, ref) => {
+const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChange, betAmount = 0, onBetHistoryChange, selectedToken = 'FLOW' }, ref) => {
   const dispatch = useDispatch();
-  const { userFlowBalance } = useSelector((state) => state.balance);
+  const { userFlowBalance, userFrothBalance } = useSelector((state) => state.balance);
   
   // Format balance for display (show 0 instead of 0.00000)
   const formatBalance = (balance) => {
@@ -575,16 +575,19 @@ const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChang
   const dropBall = useCallback(async () => {
     
     // Simple balance check - if user doesn't have enough balance, don't allow playing
-    const currentBalance = parseFloat(userFlowBalance);
+    const currentBalance = selectedToken === 'FLOW' 
+      ? parseFloat(userFlowBalance) 
+      : parseFloat(userFrothBalance);
     const latestBetAmount = betAmountRef.current;
     
     if (latestBetAmount > currentBalance) {
-      console.warn('Insufficient Flow balance for bet:', {
+      console.warn(`Insufficient ${selectedToken} balance for bet:`, {
         currentBalance: currentBalance,
         betAmount: latestBetAmount,
-        balanceInETH: formatBalance(currentBalance)
+        token: selectedToken,
+        balanceFormatted: formatBalance(currentBalance)
       });
-              alert(`Insufficient balance! You have ${formatBalance(currentBalance)} FLOW but need ${latestBetAmount} FLOW`);
+      alert(`Insufficient balance! You have ${formatBalance(currentBalance)} ${selectedToken} but need ${latestBetAmount} ${selectedToken}`);
       return;
     }
     
@@ -595,11 +598,16 @@ const PlinkoGame = forwardRef(({ rowCount = 16, riskLevel = "Medium", onRowChang
     // Deduct bet amount when ball is spawned (immediate feedback)
     if (latestBetAmount > 0) {
       const newBalance = currentBalance - latestBetAmount;
-      dispatch(setFlowBalance(newBalance.toString()));
+      if (selectedToken === 'FLOW') {
+        dispatch(setFlowBalance(newBalance.toString()));
+      } else {
+        dispatch(setFrothBalance(newBalance.toFixed(2)));
+      }
       console.log('Bet amount deducted immediately:', { 
         currentBalance, 
         betAmount: latestBetAmount,
         newBalance,
+        token: selectedToken,
         betAmountProp: betAmount,
         betAmountRef: betAmountRef.current
       });

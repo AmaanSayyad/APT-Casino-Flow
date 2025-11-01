@@ -6,6 +6,7 @@ import Image from "next/image";
 // Using Next.js public asset reference instead of import
 import useWalletStatus from '@/hooks/useWalletStatus';
 import { Shield } from "lucide-react";
+import TokenSelector from '@/components/TokenSelector';
 // Flow VRF integration
 // import { wheelDataByRisk } from "./GameWheel"; // Make sure this is exported
 
@@ -21,7 +22,9 @@ const BettingPanel = ({
   setSegments,
   manulBet,
   autoBet,
-  isSpinning
+  isSpinning,
+  selectedToken = 'FLOW',
+  onTokenChange
 }) => {
   
   const { isConnected } = useWalletStatus();
@@ -135,12 +138,21 @@ const BettingPanel = ({
         </div>
       </div>
 
+      {/* Token Selector */}
+      <div className="mb-4">
+        <TokenSelector
+          selectedToken={selectedToken}
+          onTokenChange={onTokenChange}
+          showBalances={true}
+          size="medium"
+        />
+      </div>
       
       {/* Bet Amount */}
       <div className="mb-4">
         <div className="flex justify-between p-1 mb-1">
           <label className="text-sm text-white">Bet Amount</label>
-          <div className="text-sm">{formatBalance(betAmount)} FLOW</div>
+          <div className="text-sm">{formatBalance(betAmount)} {selectedToken}</div>
         </div>
         <div className="flex w-full gradient-border">
         <div className="flex items-center w-[60%]">

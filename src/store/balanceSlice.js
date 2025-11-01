@@ -5,6 +5,7 @@ const loadInitialState = () => {
   if (typeof window !== 'undefined') {
     const savedBalance = localStorage.getItem('userBalance');
     const savedFlowBalance = localStorage.getItem('userFlowBalance');
+    const savedFrothBalance = localStorage.getItem('userFrothBalance');
     const savedLoading = localStorage.getItem('isLoading');
     
     // FLOW balance validation
@@ -25,15 +26,26 @@ const loadInitialState = () => {
       localStorage.setItem('userFlowBalance', "0");
     }
     
+    // FROTH balance validation
+    let cleanFrothBalance = "0";
+    if (savedFrothBalance && !isNaN(savedFrothBalance) && parseFloat(savedFrothBalance) >= 0) {
+      cleanFrothBalance = savedFrothBalance;
+    } else {
+      // Reset invalid FROTH balance to 0
+      localStorage.setItem('userFrothBalance', "0");
+    }
+    
     return {
       userBalance: cleanBalance, // FLOW balance
       userFlowBalance: cleanFlowBalance, // Flow balance
+      userFrothBalance: cleanFrothBalance, // FROTH balance
       isLoading: savedLoading === 'true' || false,
     };
   }
   return {
     userBalance: "0",
     userFlowBalance: "0",
+    userFrothBalance: "0",
     isLoading: false,
   };
 };
@@ -116,6 +128,42 @@ const balanceSlice = createSlice({
       }
     },
     
+    // FROTH Balance Actions
+    setFrothBalance(state, action) {
+      const newBalance = action.payload;
+      // Ensure balance never goes negative
+      if (parseFloat(newBalance) < 0) {
+        state.userFrothBalance = "0";
+        console.warn('Attempted to set negative FROTH balance, setting to 0 instead');
+      } else {
+        state.userFrothBalance = newBalance;
+      }
+      // Persist to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userFrothBalance', state.userFrothBalance);
+      }
+    },
+    addToFrothBalance(state, action) {
+      const amountToAdd = parseFloat(action.payload);
+      const currentBalance = parseFloat(state.userFrothBalance);
+      const newBalance = Math.max(0, currentBalance + amountToAdd).toFixed(2); // FROTH uses 2 decimals for display
+      state.userFrothBalance = newBalance;
+      // Persist to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userFrothBalance', newBalance);
+      }
+    },
+    subtractFromFrothBalance(state, action) {
+      const amountToSubtract = parseFloat(action.payload);
+      const currentBalance = parseFloat(state.userFrothBalance);
+      const newBalance = Math.max(0, currentBalance - amountToSubtract).toFixed(2); // FROTH uses 2 decimals for display
+      state.userFrothBalance = newBalance;
+      // Persist to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userFrothBalance', newBalance);
+      }
+    },
+    
     // Loading state
     setLoading(state, action) {
       state.isLoading = action.payload;
@@ -134,6 +182,9 @@ export const {
   setFlowBalance, 
   addToFlowBalance, 
   subtractFromFlowBalance, 
+  setFrothBalance,
+  addToFrothBalance,
+  subtractFromFrothBalance,
   setLoading 
 } = balanceSlice.actions;
 
@@ -161,6 +212,19 @@ export const saveBalanceToStorage = (balance) => {
 export const saveFlowBalanceToStorage = (balance) => {
   if (typeof window !== 'undefined') {
     localStorage.setItem('userFlowBalance', balance);
+  }
+};
+
+export const loadFrothBalanceFromStorage = () => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('userFrothBalance') || "0";
+  }
+  return "0";
+};
+
+export const saveFrothBalanceToStorage = (balance) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('userFrothBalance', balance);
   }
 };
 

@@ -16,9 +16,11 @@ import { GiRollingDices, GiCardRandom, GiPokerHand } from "react-icons/gi";
 import { FaPercentage, FaBalanceScale, FaChartLine, FaCoins, FaTrophy, FaPlay, FaExternalLinkAlt } from "react-icons/fa";
 import { useFlowWallet } from '@/hooks/useFlowWallet';
 import { useNotification } from '@/components/NotificationSystem';
+import TokenSelector from '@/components/TokenSelector';
+import { setFrothBalance } from '@/store/balanceSlice';
 
 export default function Plinko() {
-  const { userFlowBalance } = useSelector((state) => state.balance);
+  const { userFlowBalance, userFrothBalance } = useSelector((state) => state.balance);
   const dispatch = useDispatch();
   
   const [currentRows, setCurrentRows] = useState(15);
@@ -27,6 +29,7 @@ export default function Plinko() {
   const [gameHistory, setGameHistory] = useState([]);
   const [showMobileWarning, setShowMobileWarning] = useState(false);
   const [vrfNotificationId, setVrfNotificationId] = useState(null);
+  const [selectedToken, setSelectedToken] = useState('FLOW'); // Token selection state
 
   const notification = useNotification();
 
@@ -334,21 +337,29 @@ export default function Plinko() {
       console.log('📝 Enhanced Plinko bet result:', enhancedBetResult);
       setGameHistory(prev => [enhancedBetResult, ...prev].slice(0, 100)); // Keep up to last 100 entries
       
-      // Update balance based on treasury transaction result
-      // Note: Bet amount was already deducted when ball was dropped
-      const netWin = parseFloat(enhancedBetResult.netWin);
-      const currentBalance = parseFloat(userFlowBalance);
+      // Update balance based on treasury transaction result and selected token
+      // Note: Bet amount was already deducted when ball was dropped, so we add only net win
+      const netWinAmount = parseFloat(enhancedBetResult.netWin);
+      const currentBalance = selectedToken === 'FLOW' 
+        ? parseFloat(userFlowBalance) 
+        : parseFloat(userFrothBalance);
       
-      // Add only net win (can be negative for losses)
-      const newBalance = currentBalance + netWin;
+      // Add only net win (bet amount was already deducted)
+      const newBalance = currentBalance + netWinAmount;
       
       console.log('💰 Balance update:', {
         currentBalance,
-        netWin,
-        newBalance
+        netWinAmount,
+        newBalance,
+        token: selectedToken,
+        explanation: 'Bet amount was already deducted, adding only net win'
       });
       
-      dispatch(setFlowBalance(newBalance.toString()));
+      if (selectedToken === 'FLOW') {
+        dispatch(setFlowBalance(newBalance.toString()));
+      } else {
+        dispatch(setFrothBalance(newBalance.toFixed(2)));
+      }
       
     } catch (error) {
       console.error('❌ Error using Flow VRF for Plinko game:', error);
@@ -429,6 +440,8 @@ export default function Plinko() {
               onBetAmountChange={handleBetAmountChange}
               initialRows={currentRows}
               initialRiskLevel={currentRiskLevel}
+              selectedToken={selectedToken}
+              onTokenChange={setSelectedToken}
             />
           </div>
 
@@ -442,6 +455,7 @@ export default function Plinko() {
               onRowChange={handleRowChange}
               betAmount={currentBetAmount}
               onBetHistoryChange={handleBetHistoryChange}
+              selectedToken={selectedToken}
             />
           </div>
         </div>

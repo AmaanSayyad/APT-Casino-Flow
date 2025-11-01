@@ -111,6 +111,19 @@ export const useFlowWallet = () => {
     return 0;
   }, [user.loggedIn, user.addr]);
 
+  // Get user's FROTH balance (simulated for testnet)
+  const getFrothBalance = useCallback(async () => {
+    try {
+      // For testnet, we simulate FROTH balance from localStorage
+      // In production, this would query the actual FROTH contract on Flow EVM
+      const savedBalance = localStorage.getItem('userFrothBalance');
+      return parseFloat(savedBalance || '0');
+    } catch (error) {
+      console.error('❌ FROTH balance query failed:', error);
+      return 0;
+    }
+  }, []);
+
   // Execute a treasury-sponsored transaction via API
   const executeTreasuryTransaction = useCallback(async (gameType, gameParams) => {
     try {
@@ -297,6 +310,7 @@ export const useFlowWallet = () => {
     connect,
     disconnect,
     getFlowBalance,
+    getFrothBalance,
     executeTransaction,
     executeTreasuryTransaction,
     executeScript,

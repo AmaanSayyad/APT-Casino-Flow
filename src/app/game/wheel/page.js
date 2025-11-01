@@ -17,6 +17,7 @@ import { useNotification } from '@/components/NotificationSystem';
 import useWalletStatus from '@/hooks/useWalletStatus';
 // Flow wallet integration
 import { useFlowWallet } from '@/hooks/useFlowWallet';
+import TokenSelector from '@/components/TokenSelector';
 
 // Import new components
 import WheelVideo from "./components/WheelVideo";
@@ -48,6 +49,7 @@ export default function Home() {
   const [winningSegmentIndex, setWinningSegmentIndex] = useState(0);
   const [winningMultiplier, setWinningMultiplier] = useState(0);
   const [finalWheelPosition, setFinalWheelPosition] = useState(0);
+  const [selectedToken, setSelectedToken] = useState('FLOW'); // Token selection state
   const [calculatedSegment, setCalculatedSegment] = useState(0);
   
   // Store the latest wheel data for immediate use
@@ -59,7 +61,7 @@ export default function Home() {
   });
   
   const dispatch = useDispatch();
-  const { userBalance, userFlowBalance, isLoading: isLoadingBalance } = useSelector((state) => state.balance);
+  const { userBalance, userFlowBalance, userFrothBalance, isLoading: isLoadingBalance } = useSelector((state) => state.balance);
   const notification = useNotification();
   const { isConnected } = useWalletStatus();
   const { executeTreasuryTransaction, address } = useFlowWallet();
@@ -789,7 +791,7 @@ export default function Home() {
               setGameMode={setGameMode}
               betAmount={betAmount}
               setBetAmount={setBetAmount}
-              balance={parseFloat(userFlowBalance || '0')} // Use Flow balance
+              balance={selectedToken === 'FLOW' ? parseFloat(userFlowBalance || '0') : parseFloat(userFrothBalance || '0')}
               manulBet={manulBet}
               risk={selectedRisk}
               setRisk={setSelectedRisk}
@@ -797,6 +799,8 @@ export default function Home() {
               setSegments={setSegments}
               autoBet={autoBet}
               isSpinning={isSpinning}
+              selectedToken={selectedToken}
+              onTokenChange={setSelectedToken}
             />
           </div>
         </div>

@@ -8,6 +8,10 @@ import LendingTable from "@/components/LendingTable";
 import Image from "next/image";
 import { FaChartLine, FaHistory, FaInfoCircle, FaExchangeAlt, FaCoins, FaWallet, FaLock, FaUnlock, FaRobot, FaCog, FaClock, FaSync, FaPlay, FaPause, FaBolt } from "react-icons/fa";
 import { flowAutomationService } from "@/services/FlowAutomationService";
+import { useSelector, useDispatch } from 'react-redux';
+import { setFlowBalance, setFrothBalance } from '@/store/balanceSlice';
+import { FROTH_CONFIG } from '@/config/flow';
+import { addTestFrothBalance, setTestFrothBalance, FROTH_TEST_AMOUNTS, resetFrothBalance } from '@/utils/frothTestUtils';
 
 // Assets for borrowing on Flow testnet only
 const BORROW_ASSETS = {
@@ -33,7 +37,7 @@ export default function Bank() {
   const [assets, setAssets] = useState([]);
   const [isClient, setIsClient] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('swap');
+  const [activeTab, setActiveTab] = useState('balances'); // Default to balances tab
   const [transactions, setTransactions] = useState([]);
   const [showNetworkBanner, setShowNetworkBanner] = useState(true);
   const [marketTrends, setMarketTrends] = useState({
@@ -42,6 +46,10 @@ export default function Bank() {
     marketCap: 18500000,
     totalLocked: 3200000
   });
+
+  // Redux state for balances
+  const dispatch = useDispatch();
+  const { userFlowBalance, userFrothBalance } = useSelector((state) => state.balance);
 
   // Flow Automation States
   const [automationRules, setAutomationRules] = useState([]);
@@ -363,6 +371,12 @@ export default function Bank() {
         <div className="mb-8">
           <div className="flex border-b border-white/10 overflow-x-auto custom-scrollbar">
             <button
+              className={`px-6 py-3 font-medium transition-colors flex items-center gap-2 ${activeTab === 'balances' ? 'text-white border-b-2 border-blue-magic' : 'text-white/50 hover:text-white/80'}`}
+              onClick={() => setActiveTab('balances')}
+            >
+              <FaWallet /> Balances
+            </button>
+            <button
               className={`px-6 py-3 font-medium transition-colors flex items-center gap-2 ${activeTab === 'swap' ? 'text-white border-b-2 border-blue-magic' : 'text-white/50 hover:text-white/80'}`}
               onClick={() => setActiveTab('swap')}
             >
@@ -397,6 +411,138 @@ export default function Bank() {
 
         {/* Tab Content */}
         <div className="mb-12">
+          {activeTab === 'balances' && (
+            <div className="max-w-4xl mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                {/* FLOW Balance Card */}
+                <div className="bg-gradient-to-r p-[1px] from-green-500/50 to-green-400/50 rounded-xl">
+                  <div className="bg-[#1A0015] rounded-xl p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center mr-3">
+                          <FaCoins className="text-green-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-white">FLOW Balance</h3>
+                          <p className="text-sm text-gray-400">Native Flow Token</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <div className="text-3xl font-bold text-white mb-1">
+                        {parseFloat(userFlowBalance || '0').toFixed(4)} FLOW
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        ≈ ${(parseFloat(userFlowBalance || '0') * 2.83).toFixed(2)} USD
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          const amount = prompt('Enter FLOW amount to add (for testing):');
+                          if (amount && !isNaN(amount)) {
+                            const newBalance = (parseFloat(userFlowBalance || '0') + parseFloat(amount)).toFixed(4);
+                            dispatch(setFlowBalance(newBalance));
+                          }
+                        }}
+                        className="flex-1 bg-green-600/20 hover:bg-green-600/30 text-green-400 py-2 px-4 rounded-lg transition-colors border border-green-600/30"
+                      >
+                        Add FLOW (Test)
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm('Reset FLOW balance to 0?')) {
+                            dispatch(setFlowBalance('0'));
+                          }
+                        }}
+                        className="bg-red-600/20 hover:bg-red-600/30 text-red-400 py-2 px-4 rounded-lg transition-colors border border-red-600/30"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* FROTH Balance Card */}
+                <div className="bg-gradient-to-r p-[1px] from-orange-500/50 to-orange-400/50 rounded-xl">
+                  <div className="bg-[#1A0015] rounded-xl p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 bg-orange-500/20 rounded-full flex items-center justify-center mr-3">
+                          <FaCoins className="text-orange-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-white">FROTH Balance</h3>
+                          <p className="text-sm text-gray-400">KittyPunch Memecoin</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <div className="text-3xl font-bold text-white mb-1">
+                        {parseFloat(userFrothBalance || '0').toLocaleString()} FROTH
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        Flow EVM Mainnet Token
+                      </div>
+                    </div>
+
+                    <div className="text-center py-4">
+                      <p className="text-sm text-gray-400 mb-2">
+                        FROTH balance is managed through Flow EVM Mainnet
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Use the Navbar "Manage" button to deposit/withdraw FROTH
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Token Information */}
+              <div className="bg-gradient-to-r p-[1px] from-purple-500/50 to-blue-500/50 rounded-xl">
+                <div className="bg-[#1A0015] rounded-xl p-6">
+                  <h3 className="text-xl font-semibold text-white mb-4">Token Information</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="text-lg font-medium text-white mb-3">FLOW Token</h4>
+                      <ul className="space-y-2 text-sm text-gray-300">
+                        <li>• Native Flow blockchain token</li>
+                        <li>• Used for transaction fees and staking</li>
+                        <li>• Minimum bet: 0.001 FLOW</li>
+                        <li>• Maximum bet: 1000 FLOW</li>
+                      </ul>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-lg font-medium text-white mb-3">FROTH Token</h4>
+                      <ul className="space-y-2 text-sm text-gray-300">
+                        <li>• KittyPunch memecoin on Flow EVM</li>
+                        <li>• Independent token with its own value</li>
+                        <li>• Minimum bet: {FROTH_CONFIG.MIN_BET.toLocaleString()} FROTH</li>
+                        <li>• Maximum bet: {FROTH_CONFIG.MAX_BET.toLocaleString()} FROTH</li>
+                      </ul>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6 p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+                    <div className="flex items-center mb-2">
+                      <FaInfoCircle className="text-green-400 mr-2" />
+                      <span className="text-green-400 font-medium">Mainnet Integration</span>
+                    </div>
+                    <p className="text-sm text-gray-300">
+                      FROTH is a real ERC-20 token on Flow EVM Mainnet. 
+                      Deposits and withdrawals interact with the actual FROTH contract.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'swap' && (
             <>
               <div className="max-w-2xl mx-auto mb-12">

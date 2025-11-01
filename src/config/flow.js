@@ -38,6 +38,8 @@ export const FLOW_CONTRACTS = {
   FUNGIBLE_TOKEN: "0x9a0766d93b6608b7", 
   // Add your casino contracts here when deployed
   CASINO_CONTRACT: "0x0c0c904844c9a720", // Placeholder - update with actual contract address
+  // FROTH Token on Flow EVM (testnet equivalent - you'll need to deploy or get testnet address)
+  FROTH_TOKEN: "0xB73BF8e6A4477a952E0338e6CC00cC0ce5AD04bA", // Mainnet address - update for testnet
 };
 
 // Flow Treasury Configuration
@@ -61,6 +63,25 @@ export const FLOW_CASINO_CONFIG = {
   MAX_BET: parseFloat(process.env.NEXT_PUBLIC_FLOW_MAX_BET) || 1000,
   HOUSE_EDGE: parseFloat(process.env.NEXT_PUBLIC_FLOW_HOUSE_EDGE) || 0.02,
   VRF_ENABLED: process.env.NEXT_PUBLIC_FLOW_VRF_ENABLED === 'true',
+};
+
+// FROTH Token Configuration (Mainnet Flow EVM)
+export const FROTH_CONFIG = {
+  // FROTH Token Contract Address (Mainnet Flow EVM)
+  CONTRACT_ADDRESS: process.env.NEXT_PUBLIC_FROTH_CONTRACT_ADDRESS || "0xB73BF8e6A4477a952E0338e6CC00cC0ce5AD04bA",
+  DECIMALS: 18,
+  SYMBOL: "FROTH",
+  NAME: "FROTH Token",
+  MIN_BET: parseFloat(process.env.NEXT_PUBLIC_FROTH_MIN_BET) || 1000, // 1000 FROTH minimum
+  MAX_BET: parseFloat(process.env.NEXT_PUBLIC_FROTH_MAX_BET) || 1000000, // 1M FROTH maximum
+
+  // Mainnet Flow EVM Network
+  NETWORK: {
+    chainId: 747, // Flow EVM Mainnet
+    name: "Flow EVM Mainnet",
+    rpcUrl: "https://mainnet.evm.nodes.onflow.org",
+    blockExplorer: "https://evm.flowscan.io"
+  }
 };
 
 // Flow Testnet Network Info

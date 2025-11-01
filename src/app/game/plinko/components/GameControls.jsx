@@ -3,10 +3,11 @@ import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp, Minus, Plus } from "lucide-react";
 import { useSelector } from 'react-redux';
 import useWalletStatus from '@/hooks/useWalletStatus';
+import TokenSelector from '@/components/TokenSelector';
 
 
-export default function GameControls({ onBet, onRowChange, onRiskLevelChange, onBetAmountChange, initialRows = 16, initialRiskLevel = "Medium" }) {
-  const { userFlowBalance } = useSelector((state) => state.balance);
+export default function GameControls({ onBet, onRowChange, onRiskLevelChange, onBetAmountChange, initialRows = 16, initialRiskLevel = "Medium", selectedToken = 'FLOW', onTokenChange }) {
+  const { userFlowBalance, userFrothBalance } = useSelector((state) => state.balance);
   const { isConnected } = useWalletStatus();
   
   const [gameMode, setGameMode] = useState("manual");
@@ -116,17 +117,20 @@ export default function GameControls({ onBet, onRowChange, onRiskLevelChange, on
     }
     
     const betValue = parseFloat(betAmount);
-    const currentBalance = parseFloat(userFlowBalance);
+    const currentBalance = selectedToken === 'FLOW' 
+      ? parseFloat(userFlowBalance) 
+      : parseFloat(userFrothBalance);
     
-    console.log('handleBet called with betValue:', betValue, 'currentBalance (FLOW):', currentBalance);
+    console.log('handleBet called with betValue:', betValue, `currentBalance (${selectedToken}):`, currentBalance);
     
-    if (betValue < 1) {
-      alert("Minimum bet amount is 1 FLOW");
+    const minBet = selectedToken === 'FLOW' ? 1 : 1000;
+    if (betValue < minBet) {
+      alert(`Minimum bet amount is ${minBet} ${selectedToken}`);
       return;
     }
     
     if (betValue > currentBalance) {
-      alert(`Insufficient balance! You have ${formatBalance(currentBalance)} FLOW but need ${betValue} FLOW`);
+      alert(`Insufficient balance! You have ${formatBalance(currentBalance)} ${selectedToken} but need ${betValue} ${selectedToken}`);
       return;
     }
     
@@ -167,20 +171,24 @@ export default function GameControls({ onBet, onRowChange, onRiskLevelChange, on
     let currentBet = 0;
     let localCurrentBet = 0; // Local variable for interval
     
-    // Check if we have enough Flow balance for all bets
+    // Check if we have enough balance for all bets based on selected token
     const totalBetAmount = totalBets * parseFloat(betAmount);
-    const currentBalance = parseFloat(userFlowBalance);
+    const currentBalance = selectedToken === 'FLOW' 
+      ? parseFloat(userFlowBalance) 
+      : parseFloat(userFrothBalance);
     
     console.log('Auto betting balance check:', {
       totalBets,
       betAmount,
       totalBetAmount,
       currentBalance,
-      balanceInETH: formatBalance(currentBalance)
+      token: selectedToken,
+      balanceFormatted: formatBalance(currentBalance)
     });
     
     if (totalBetAmount > currentBalance) {
-      alert(`Insufficient balance for ${totalBets} bets of ${betAmount} FLOW each. You need ${totalBetAmount.toFixed(3)} FLOW but have ${formatBalance(currentBalance)} FLOW`);
+      const decimals = selectedToken === 'FLOW' ? 3 : 2;
+      alert(`Insufficient balance for ${totalBets} bets of ${betAmount} ${selectedToken} each. You need ${totalBetAmount.toFixed(decimals)} ${selectedToken} but have ${formatBalance(currentBalance)} ${selectedToken}`);
       setIsAutoPlaying(false);
       return;
     }
@@ -310,22 +318,28 @@ export default function GameControls({ onBet, onRowChange, onRiskLevelChange, on
     }
   };
 
-  // Check if user has sufficient Flow balance for current bet
+  // Check if user has sufficient balance for current bet based on selected token
   const hasSufficientBalance = () => {
     if (!isConnected) return false;
     const betValue = parseFloat(betAmount);
-    const currentBalance = parseFloat(userFlowBalance);
-    return betValue <= currentBalance && betValue >= 1;
+    const currentBalance = selectedToken === 'FLOW' 
+      ? parseFloat(userFlowBalance) 
+      : parseFloat(userFrothBalance);
+    const minBet = selectedToken === 'FLOW' ? 1 : 1000;
+    return betValue <= currentBalance && betValue >= minBet;
   };
 
-  // Check if user has sufficient Flow balance for auto betting
+  // Check if user has sufficient balance for auto betting based on selected token
   const hasSufficientBalanceForAutoBet = () => {
     if (!isConnected) return false;
     const betValue = parseFloat(betAmount);
     const totalBets = parseInt(numberOfBets) || 1;
     const totalBetAmount = totalBets * betValue;
-    const currentBalance = parseFloat(userFlowBalance);
-    return totalBetAmount <= currentBalance && betValue >= 1;
+    const currentBalance = selectedToken === 'FLOW' 
+      ? parseFloat(userFlowBalance) 
+      : parseFloat(userFrothBalance);
+    const minBet = selectedToken === 'FLOW' ? 1 : 1000;
+    return totalBetAmount <= currentBalance && betValue >= minBet;
   };
 
   // Get current balance in FLOW for display
@@ -373,13 +387,23 @@ export default function GameControls({ onBet, onRowChange, onRiskLevelChange, on
         </div>
       </div>
 
+      {/* Token Selector */}
+      <div className="mb-6">
+        <TokenSelector
+          selectedToken={selectedToken}
+          onTokenChange={onTokenChange}
+          showBalances={true}
+          size="medium"
+        />
+      </div>
+
       {/* Bet Amount */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-300 mb-2">
           Bet Amount
         </label>
         <div className="mb-2">
-          <span className="text-2xl font-bold text-white">{betAmount} FLOW</span>
+          <span className="text-2xl font-bold text-white">{betAmount} {selectedToken}</span>
         </div>
         <div className="relative">
           <input
@@ -592,8 +616,8 @@ export default function GameControls({ onBet, onRowChange, onRiskLevelChange, on
           {((gameMode === "auto" && !hasSufficientBalanceForAutoBet()) || (!gameMode === "auto" && !hasSufficientBalance())) && parseFloat(betAmount) > 0 && (
             <div className="text-center text-red-400 text-sm">
               {gameMode === "auto" 
-                ? `Insufficient balance for ${numberOfBets} bets of ${betAmount} FLOW each` 
-                : `Insufficient balance for ${betAmount} FLOW bet`
+                ? `Insufficient balance for ${numberOfBets} bets of ${betAmount} ${selectedToken} each` 
+                : `Insufficient balance for ${betAmount} ${selectedToken} bet`
               }
             </div>
           )}
