@@ -72,6 +72,7 @@ export const FROTH_CONFIG = {
   DECIMALS: 18,
   SYMBOL: "FROTH",
   NAME: "FROTH Token",
+  LOGO_URL: "https://froth.finance/logo.png", // FROTH official logo
   MIN_BET: parseFloat(process.env.NEXT_PUBLIC_FROTH_MIN_BET) || 1000, // 1000 FROTH minimum
   MAX_BET: parseFloat(process.env.NEXT_PUBLIC_FROTH_MAX_BET) || 1000000, // 1M FROTH maximum
 

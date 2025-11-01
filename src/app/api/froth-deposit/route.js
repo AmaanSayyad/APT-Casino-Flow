@@ -7,9 +7,9 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request) {
   try {
-    const { userAddress, amount, transactionId, contractAddress } = await request.json();
+    const { userAddress, flowAddress, amount, transactionId, contractAddress } = await request.json();
 
-    // Validate input
+    // Validate input - userAddress is EVM address, flowAddress is Flow address
     if (!userAddress || !amount || !contractAddress) {
       return NextResponse.json(
         { error: 'Missing required parameters' },
@@ -35,7 +35,8 @@ export async function POST(request) {
     }
 
     console.log('🟡 Processing FROTH deposit on mainnet:', {
-      userAddress,
+      evmAddress: userAddress,
+      flowAddress: flowAddress,
       amount: depositAmount,
       contractAddress,
       transactionId
@@ -78,12 +79,12 @@ export async function POST(request) {
 
     // Update user's casino balance (in production, this would be in a database)
     // For now, we'll use localStorage as a temporary solution
-    const currentBalance = parseFloat(localStorage?.getItem?.('userFrothBalance') || '0');
+    // Use Flow address as the key for consistency with Flow Wallet Kit
+    const balanceKey = flowAddress ? `userFrothBalance_${flowAddress}` : 'userFrothBalance';
+    const currentBalance = parseFloat(process.env.NODE_ENV === 'development' ? '0' : '0'); // Server-side, can't access localStorage
     const newBalance = (currentBalance + depositAmount).toFixed(2);
     
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('userFrothBalance', newBalance);
-    }
+    // Return the new balance to be set on client-side
 
     const result = {
       success: true,
@@ -91,7 +92,8 @@ export async function POST(request) {
       amount: depositAmount,
       newBalance: newBalance,
       token: 'FROTH',
-      userAddress: userAddress,
+      evmAddress: userAddress,
+      flowAddress: flowAddress,
       contractAddress: contractAddress,
       network: 'Flow EVM Mainnet',
       timestamp: new Date().toISOString()

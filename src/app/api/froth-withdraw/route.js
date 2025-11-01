@@ -7,9 +7,9 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request) {
   try {
-    const { userAddress, amount, token, contractAddress } = await request.json();
+    const { userAddress, flowAddress, amount, token, contractAddress } = await request.json();
 
-    // Validate input
+    // Validate input - userAddress is EVM address, flowAddress is Flow address
     if (!userAddress || !amount || token !== 'FROTH' || !contractAddress) {
       return NextResponse.json(
         { error: 'Invalid request parameters' },
@@ -35,7 +35,8 @@ export async function POST(request) {
     }
 
     console.log('🟡 Processing FROTH withdrawal on mainnet:', {
-      userAddress,
+      evmAddress: userAddress,
+      flowAddress: flowAddress,
       amount: withdrawAmount,
       token,
       contractAddress
@@ -50,7 +51,9 @@ export async function POST(request) {
 
     // For now, we'll simulate the withdrawal process
     // Check user's casino balance (in production, this would be from database)
-    const currentBalance = parseFloat(localStorage?.getItem?.('userFrothBalance') || '0');
+    // Use Flow address as key for consistency
+    const balanceKey = flowAddress ? `userFrothBalance_${flowAddress}` : 'userFrothBalance';
+    const currentBalance = parseFloat(process.env.NODE_ENV === 'development' ? '1000' : '0'); // Server-side simulation
     
     if (withdrawAmount > currentBalance) {
       return NextResponse.json(
@@ -65,18 +68,16 @@ export async function POST(request) {
     // In production, this would be a real transaction hash from Flow EVM
     const txHash = `0x${Math.random().toString(16).substr(2, 64)}`;
 
-    // Update casino balance (in production, this would be in database)
+    // Calculate new balance (will be updated on client-side)
     const newBalance = (currentBalance - withdrawAmount).toFixed(2);
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('userFrothBalance', newBalance);
-    }
 
     const result = {
       success: true,
       transactionHash: txHash,
       amount: withdrawAmount,
       token: 'FROTH',
-      userAddress: userAddress,
+      evmAddress: userAddress,
+      flowAddress: flowAddress,
       contractAddress: contractAddress,
       newBalance: newBalance,
       timestamp: new Date().toISOString(),

@@ -12,7 +12,7 @@ import WithdrawModal from "./WithdrawModal";
 import LiveChat from "./LiveChat";
 import { useFlowWallet } from '../hooks/useFlowWallet';
 import { flowTreasuryService } from '../services/FlowTreasuryService';
-import { FLOW_TREASURY_CONFIG } from '../config/flow';
+import { FLOW_TREASURY_CONFIG, FROTH_CONFIG } from '../config/flow';
 import { debugFlowBalance } from '../utils/flowBalanceCheck';
 import { testFlowConnection, withRetry } from '../config/flow';
 import { resetFlowBalance, isFlowBalanceCorrupted } from '../utils/resetFlowBalance';
@@ -142,8 +142,9 @@ export default function Navbar() {
       return;
     }
 
-    if (!isConnected || !address) {
-      notification.error('Please connect your wallet first');
+    // FROTH requires MetaMask connection, not Flow Wallet Kit
+    if (!window.ethereum) {
+      notification.error('MetaMask is required for FROTH deposits. Please install MetaMask.');
       return;
     }
 
@@ -159,12 +160,39 @@ export default function Navbar() {
     }
 
     setIsFrothDepositing(true);
-    console.log('🟡 Starting FROTH deposit process on mainnet for:', amount, 'FROTH');
+    console.log('🟡 Starting FROTH deposit process on Flow EVM mainnet for:', amount, 'FROTH');
 
     try {
-      // Check if user has MetaMask and is on Flow EVM
-      if (!window.ethereum) {
-        throw new Error('MetaMask or compatible wallet required for FROTH deposits');
+      // Request MetaMask connection
+      const accounts = await window.ethereum.request({ 
+        method: 'eth_requestAccounts' 
+      });
+      
+      if (!accounts || accounts.length === 0) {
+        throw new Error('Please connect your MetaMask wallet');
+      }
+      
+      const evmAddress = accounts[0];
+      console.log('✅ MetaMask connected:', evmAddress);
+
+      // Add FROTH token to MetaMask if not already added
+      try {
+        await window.ethereum.request({
+          method: 'wallet_watchAsset',
+          params: {
+            type: 'ERC20',
+            options: {
+              address: FROTH_CONFIG.CONTRACT_ADDRESS,
+              symbol: FROTH_CONFIG.SYMBOL,
+              decimals: FROTH_CONFIG.DECIMALS,
+              image: FROTH_CONFIG.LOGO_URL,
+            },
+          },
+        });
+        console.log('✅ FROTH token added to MetaMask for deposit');
+      } catch (tokenError) {
+        console.warn('⚠️ Could not add FROTH token to MetaMask:', tokenError);
+        // Continue anyway - not critical
       }
 
       // Switch to Flow EVM Mainnet if needed
@@ -200,25 +228,46 @@ export default function Navbar() {
         }
       }
 
-      notification.info('Please approve the FROTH transfer in your wallet...');
+      notification.info('Please approve the FROTH transfer in MetaMask...');
 
-      // In production, this would trigger a MetaMask transaction
-      // For now, we'll simulate the process
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Trigger real MetaMask transaction for FROTH transfer
+      let txHash;
+      try {
+        // ERC-20 transfer function signature: transfer(address,uint256)
+        const transferFunction = '0xa9059cbb';
+        const treasuryAddress = FLOW_TREASURY_CONFIG.ADDRESS.slice(2).padStart(64, '0');
+        const amountInWei = (amount * Math.pow(10, 18)).toString(16).padStart(64, '0');
+        const data = transferFunction + treasuryAddress + amountInWei;
 
-      // Mock transaction hash
-      const mockTxHash = `0x${Math.random().toString(16).substr(2, 64)}`;
+        txHash = await window.ethereum.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            from: evmAddress,
+            to: FROTH_CONFIG.CONTRACT_ADDRESS,
+            data: data,
+            gas: '0x15F90', // 90000 gas for ERC-20 transfer
+          }],
+        });
 
-      // Call deposit API
+        console.log('✅ FROTH transfer transaction sent:', txHash);
+      } catch (txError) {
+        if (txError.code === 4001) {
+          throw new Error('Transaction rejected by user');
+        }
+        throw new Error(`Transaction failed: ${txError.message}`);
+      }
+
+      // Call deposit API with EVM address
       const result = await fetch('/api/froth-deposit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userAddress: address,
+          userAddress: evmAddress, // Use EVM address for FROTH
+          flowAddress: address, // Also send Flow address for linking
           amount: amount,
-          transactionId: mockTxHash,
+          transactionId: txHash,
           contractAddress: FROTH_CONFIG.CONTRACT_ADDRESS
         })
       });
@@ -229,10 +278,19 @@ export default function Navbar() {
         throw new Error(depositResult.error || 'FROTH deposit failed');
       }
 
-      // Update FROTH balance
-      dispatch(setFrothBalance(depositResult.newBalance));
+      // Update FROTH balance in localStorage and Redux
+      const currentFrothBalance = parseFloat(userFrothBalance || '0');
+      const newFrothBalance = (currentFrothBalance + amount).toFixed(2);
+      
+      // Save to localStorage with Flow address key for consistency
+      if (address) {
+        localStorage.setItem(`userFrothBalance_${address}`, newFrothBalance);
+        localStorage.setItem('userFrothBalance', newFrothBalance); // Global fallback
+      }
+      
+      dispatch(setFrothBalance(newFrothBalance));
 
-      notification.success(`Successfully deposited ${amount} FROTH! TX: ${mockTxHash.slice(0, 8)}...`);
+      notification.success(`Successfully deposited ${amount} FROTH! TX: ${txHash.slice(0, 8)}...`);
       setFrothDepositAmount('');
 
     } catch (error) {
@@ -250,8 +308,9 @@ export default function Navbar() {
       return;
     }
 
-    if (!isConnected || !address) {
-      notification.error('Please connect your wallet first');
+    // FROTH requires MetaMask connection
+    if (!window.ethereum) {
+      notification.error('MetaMask is required for FROTH withdrawals. Please install MetaMask.');
       return;
     }
 
@@ -268,19 +327,52 @@ export default function Navbar() {
     }
 
     setIsFrothWithdrawing(true);
-    console.log('🟡 Starting FROTH withdraw process on mainnet for:', amount, 'FROTH');
+    console.log('🟡 Starting FROTH withdraw process on Flow EVM mainnet for:', amount, 'FROTH');
 
     try {
+      // Get MetaMask address
+      const accounts = await window.ethereum.request({ 
+        method: 'eth_requestAccounts' 
+      });
+      
+      if (!accounts || accounts.length === 0) {
+        throw new Error('Please connect your MetaMask wallet');
+      }
+      
+      const evmAddress = accounts[0];
+      console.log('✅ MetaMask connected for withdrawal:', evmAddress);
+
+      // Add FROTH token to MetaMask if not already added
+      try {
+        await window.ethereum.request({
+          method: 'wallet_watchAsset',
+          params: {
+            type: 'ERC20',
+            options: {
+              address: FROTH_CONFIG.CONTRACT_ADDRESS,
+              symbol: FROTH_CONFIG.SYMBOL,
+              decimals: FROTH_CONFIG.DECIMALS,
+              image: FROTH_CONFIG.LOGO_URL,
+            },
+          },
+        });
+        console.log('✅ FROTH token added to MetaMask for withdrawal');
+      } catch (tokenError) {
+        console.warn('⚠️ Could not add FROTH token to MetaMask:', tokenError);
+        // Continue anyway - not critical
+      }
+
       notification.info('Processing FROTH withdrawal on Flow EVM Mainnet...');
 
-      // Call withdrawal API
+      // Call withdrawal API with EVM address
       const result = await fetch('/api/froth-withdraw', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userAddress: address,
+          userAddress: evmAddress, // Use EVM address for FROTH
+          flowAddress: address, // Also send Flow address for linking
           amount: amount,
           token: 'FROTH',
           contractAddress: FROTH_CONFIG.CONTRACT_ADDRESS
@@ -293,8 +385,17 @@ export default function Navbar() {
         throw new Error(withdrawResult.error || 'FROTH withdrawal failed');
       }
 
-      // Update FROTH balance
-      dispatch(setFrothBalance(withdrawResult.newBalance));
+      // Update FROTH balance in localStorage and Redux
+      const currentFrothBalance = parseFloat(userFrothBalance || '0');
+      const newFrothBalance = (currentFrothBalance - amount).toFixed(2);
+      
+      // Save to localStorage with Flow address key for consistency
+      if (address) {
+        localStorage.setItem(`userFrothBalance_${address}`, newFrothBalance);
+        localStorage.setItem('userFrothBalance', newFrothBalance); // Global fallback
+      }
+      
+      dispatch(setFrothBalance(newFrothBalance));
 
       notification.success(`Successfully withdrew ${amount} FROTH! TX: ${withdrawResult.transactionHash.slice(0, 8)}...`);
       setFrothWithdrawAmount('0');
@@ -415,16 +516,25 @@ export default function Navbar() {
 
   // Load FROTH balance
   const loadFrothBalance = async () => {
+    if (!address) return;
+    
     try {
-      // Load FROTH balance from localStorage
-      const localFrothBalance = localStorage.getItem('userFrothBalance');
+      // Load FROTH balance from localStorage using Flow address as key
+      const localFrothBalance = localStorage.getItem(`userFrothBalance_${address}`);
       console.log('Loading FROTH balance from localStorage:', localFrothBalance);
       
       if (localFrothBalance && parseFloat(localFrothBalance) >= 0) {
         dispatch(setFrothBalance(localFrothBalance));
         console.log('FROTH balance loaded from localStorage:', localFrothBalance);
       } else {
-        dispatch(setFrothBalance("0"));
+        // Try global FROTH balance as fallback
+        const globalFrothBalance = localStorage.getItem('userFrothBalance');
+        if (globalFrothBalance && parseFloat(globalFrothBalance) >= 0) {
+          dispatch(setFrothBalance(globalFrothBalance));
+          console.log('Global FROTH balance loaded:', globalFrothBalance);
+        } else {
+          dispatch(setFrothBalance("0"));
+        }
       }
       
     } catch (error) {
@@ -1222,6 +1332,35 @@ export default function Navbar() {
                     <span className="text-sm text-orange-300 font-medium">
                       {isLoadingBalance ? 'Loading...' : formatFrothBalance(userFrothBalance)}
                     </span>
+                    <button
+                      onClick={async () => {
+                        if (!window.ethereum) {
+                          notification.error('MetaMask is required to add FROTH token');
+                          return;
+                        }
+                        try {
+                          await window.ethereum.request({
+                            method: 'wallet_watchAsset',
+                            params: {
+                              type: 'ERC20',
+                              options: {
+                                address: FROTH_CONFIG.CONTRACT_ADDRESS,
+                                symbol: FROTH_CONFIG.SYMBOL,
+                                decimals: FROTH_CONFIG.DECIMALS,
+                                image: FROTH_CONFIG.LOGO_URL,
+                              },
+                            },
+                          });
+                          notification.success('FROTH token added to MetaMask!');
+                        } catch (error) {
+                          notification.error('Failed to add FROTH token to MetaMask');
+                        }
+                      }}
+                      className="text-xs text-gray-400 hover:text-orange-300 transition-colors"
+                      title="Add FROTH token to MetaMask"
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
                 
