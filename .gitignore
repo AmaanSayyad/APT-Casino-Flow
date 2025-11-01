@@ -121,19 +121,7 @@ apt-casino/
 cache/
 artifacts/
 
-# Flow CLI files
-flow.json
-*.cdc
-cadence/
-transactions/
-scripts/
-flow-accounts.json
-flow-config.json
 
-# Flow development files
-.flow/
-flow-state/
-flow-emulator-state/
 
 # Flow private keys and sensitive data
 *private-key*
