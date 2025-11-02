@@ -365,5 +365,5 @@ npm run fund-treasury    # Fund Flow treasury
 ## 📹 Demo & Links
 
 - **Live URL**: https://apt-casino-flow.vercel.app
-- **Live Demo**: https://apt-casino-flow.vercel.app/
 - **Pitch Deck**: https://www.figma.com/deck/w6uEPX0mlzm3X0EHdZ3HsB/APT-Casino-Flow?node-id=1-1812&p=f&t=Mobb2fLKVbG84e5v-1&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1
+- **X Link**: https://x.com/amaanbiz
