@@ -322,11 +322,6 @@ This project aligns with the following Forte Hacks tracks:
 - **Best Use of Flow Core Features**: Extensive use of FCL, Solidity smart contracts, Flow VRF, Flow wallet ecosystem
 - **Best Use of Flow Forte Actions and Workflows**: Flow VRF integration with Solidity contracts for automated randomness workflows
 
-## 📹 Demo & Links
-
-- **Live Demo**: https://apt-casino-flow.vercel.app/
-- **Pitch Deck**: https://www.figma.com/deck/w6uEPX0mlzm3X0EHdZ3HsB/APT-Casino-Flow?node-id=1-1812&p=f&t=Mobb2fLKVbG84e5v-1&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1
-
 ## 🛠️ Commands
 
 ```bash
@@ -366,3 +361,9 @@ npm run fund-treasury    # Fund Flow treasury
 - [ ] SDK for third-party game developers
 - [ ] Developer platform for gambling game launchpad
 - [ ] Cross-chain bridges for multi-chain support
+
+## 📹 Demo & Links
+
+- **Live URL**: https://apt-casino-flow.vercel.app
+- **Live Demo**: https://apt-casino-flow.vercel.app/
+- **Pitch Deck**: https://www.figma.com/deck/w6uEPX0mlzm3X0EHdZ3HsB/APT-Casino-Flow?node-id=1-1812&p=f&t=Mobb2fLKVbG84e5v-1&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1
