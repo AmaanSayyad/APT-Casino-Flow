@@ -1,8 +1,8 @@
 # Flow Automation & Flow Forte Architecture
 
-Bu dokümantasyon APT Casino'da Flow Automation sisteminin ve Flow Forte entegrasyonunun nasıl çalıştığını detaylı olarak açıklar.
+This documentation explains in detail how the Flow Automation system and Flow Forte integration work in APT Casino.
 
-## 🏗️ Sistem Mimarisi
+## 🏗️ System Architecture
 
 ```mermaid
 graph TB
