@@ -25,7 +25,7 @@ The traditional online gambling industry is plagued by several issues, including
 - **Provably Fair Gaming:** Utilising the **Flow VRF** on-chain randomness module with **Flow Forte Actions** for automated workflows, ensuring all game outcomes are 100% transparent and verifiably fair.
 <img width="1920" height="1017" alt="commit-reveal-781e7a6a3f33610dc3258192029cbd4d" src="https://github.com/user-attachments/assets/0c125534-9ae5-4430-b5fb-ed201ae11a52" />
 
-- **FROTH Token Integration:** Leveraging KittyPunch's $FROTH token ecosystem for enhanced gaming experiences, rewards, and community engagement.
+- **FROTH Token Integration:** Leveraging KittyPunch's $FROTH token ecosystem for gaming experiences, rewards, and community engagement.
 - **Flexible Withdrawal Policies:** Providing users with unrestricted access to their funds.
 - **Transparent Bonus Schemes:** Clear and clean bonus terms without hidden traps.
 - **True Asset Ownership:** Decentralised asset management ensures users have full control over their assets.
@@ -39,8 +39,8 @@ The traditional online gambling industry is plagued by several issues, including
 - **On-Chain Randomness:** Utilizing **Flow VRF** on-chain randomness module to ensure provably fair game outcomes.
 <img width="1536" height="864" alt="355232251-6880e1cb-769c-4272-8b66-686a90abf3be" src="https://github.com/user-attachments/assets/f32cd05a-fbd0-43d7-8aae-cf2f7c7eb72c" />
 
-- **Flow Forte Actions Integration:** Leveraging Flow Actions (FLIP-338) for automated, reusable onchain workflows that enable seamless protocol composition and AI agent integration.
-- **FROTH Token Ecosystem:** Built on KittyPunch's $FROTH token for enhanced gaming experiences, community rewards, and in-game economies.
+- **Flow Forte Actions Integration:** Leveraging Flow Actions (FLIP-338) for automated, reusable onchain workflows that enable protocol composition and AI agent integration.
+- **FROTH Token Ecosystem:** Built on KittyPunch's $FROTH token for gaming experiences, community rewards, and in-game economies.
 - **Scheduled Transactions:** Utilizing Flow's scheduled transactions feature for autonomous workflows, recurring jobs, and deferred actions without external keepers.
 - **Decentralized Asset Management:** Users retain full control over their funds through secure and transparent blockchain transactions.
 - **User-Friendly Interface:** An intuitive and secure interface for managing funds, placing bets, and interacting with games.
@@ -82,7 +82,7 @@ This project is **deployed and operational on Flow Testnet**. All smart contract
 ### 🔐 Core Flow Features Used
 
 #### **Flow Client Library (FCL) Integration**
-- Seamless wallet connection using Flow's native wallet discovery
+- Direct wallet connection using Flow's native wallet discovery
 - Gasless transactions via treasury-sponsored flows
 - Flow wallet compatibility (Blocto, Dapper, Ledger Flow, etc.)
 - **Solidity Smart Contracts**: All game logic implemented in Solidity
@@ -96,7 +96,7 @@ This project is **deployed and operational on Flow Testnet**. All smart contract
 
 #### **FROTH Token Ecosystem Integration**
 - $FROTH as premium in-game currency and reward mechanism
-- Staking incentives for enhanced gaming experiences
+- Staking incentives for gaming experiences
 - Community rewards and exclusive access features
 - NFT drops and collectible experiences powered by $FROTH
 
@@ -282,7 +282,7 @@ The application will be available at `http://localhost:3000`
 
 ### Flow Wallet Connection
 
-The project uses Flow Client Library (FCL) for seamless wallet integration:
+The project uses Flow Client Library (FCL) for wallet integration:
 
 ```javascript
 import * as fcl from "@onflow/fcl";
@@ -356,7 +356,7 @@ const result = await flowVRFService.generateRandom('ROULETTE', {
 
 ### What are Flow Forte Actions?
 
-Flow Forte Actions (FLIP-338) are self-contained, reusable onchain building blocks that enable seamless protocol composition and AI agent integration. Think of them as standardized onchain APIs that plug together like Lego bricks, allowing for automated workflows without external keepers or servers.
+Flow Forte Actions (FLIP-338) are self-contained, reusable onchain building blocks that enable protocol composition and AI agent integration. Think of them as standardized onchain APIs that plug together like Lego bricks, allowing for automated workflows without external keepers or servers.
 
 ### Key Benefits of Flow Actions
 
@@ -376,11 +376,11 @@ Flow's scheduled transactions allow smart contracts to execute code at (or after
 
 ### FROTH Token Ecosystem
 
-APT Casino integrates with KittyPunch's $FROTH token ecosystem to create enhanced gaming experiences:
+APT Casino integrates with KittyPunch's $FROTH token ecosystem to create gaming experiences:
 
 ### FROTH Integration Features
 
-- **In-Game Currency**: $FROTH serves as premium in-game currency for enhanced features
+- **In-Game Currency**: $FROTH serves as premium in-game currency for additional features
 - **Reward Mechanism**: Earn $FROTH through gameplay achievements and tournaments
 - **Staking Incentives**: Stake $FROTH for boosted rewards and exclusive access
 - **Community Engagement**: Social features and competitions using $FROTH
@@ -388,7 +388,7 @@ APT Casino integrates with KittyPunch's $FROTH token ecosystem to create enhance
 
 ### How FROTH Enhances Gaming
 
-**Gaming Applications**: $FROTH serves as an in-game currency, reward mechanism, and staking asset for enhanced casino experiences.
+**Gaming Applications**: $FROTH serves as an in-game currency, reward mechanism, and staking asset for casino experiences.
 
 **Social/Community Tools**: Create platforms for $FROTH holders to interact, compete, and collaborate in exclusive casino communities.
 
@@ -478,9 +478,9 @@ npm run fund-treasury    # Fund Flow treasury
 
 ### Phase 2
 - [ ] Deploy Solidity smart contracts on Flow Mainnet
-- [ ] Advanced Flow Actions composition for complex multi-protocol workflows
+- [ ] Flow Actions composition for complex multi-protocol workflows
 - [ ] AI agent integration with automated tournament management
-- [ ] Enhanced FROTH staking and reward mechanisms
+- [ ] Improved FROTH staking and reward mechanisms
 - [ ] Expand game catalog with FROTH-powered features
 - [ ] Flow-native NFT integration for player profiles
 
@@ -495,3 +495,241 @@ npm run fund-treasury    # Fund Flow treasury
 - **Live URL**: https://apt-casino-flow.vercel.app
 - **Pitch Deck**: https://www.figma.com/deck/w6uEPX0mlzm3X0EHdZ3HsB/APT-Casino-Flow?node-id=1-1812&p=f&t=Mobb2fLKVbG84e5v-1&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1
 - **X Link**: https://x.com/AmaanSayyad15/status/1986159537691500802
+## 🔧 Technical Architecture Diagrams
+
+### 🪙 FROTH Token Integration Flow
+
+```mermaid
+graph TB
+    subgraph "User Interface"
+        A[User Wallet] --> B[Token Selector]
+        B --> C[FROTH Balance Display]
+        B --> D[FLOW Balance Display]
+    end
+    
+    subgraph "Flow Wallet EVM Integration"
+        E[Flow Wallet] --> F[EVM Provider Detection]
+        F --> G{Wallet Type}
+        G -->|Flow Wallet EVM| H[Native EVM Support]
+        G -->|MetaMask Fallback| I[MetaMask Provider]
+    end
+    
+    subgraph "FROTH Operations"
+        H --> J[FROTH Deposit]
+        I --> J
+        J --> K[Flow EVM Mainnet]
+        K --> L[FROTH Contract]
+        L --> M[Balance Update]
+        
+        N[FROTH Withdraw] --> O[Treasury Validation]
+        O --> P[EVM Transaction]
+        P --> Q[User Wallet]
+    end
+    
+    subgraph "Gaming Integration"
+        M --> R[Game Betting]
+        R --> S[FROTH Staking]
+        S --> T[Reward Multipliers]
+        T --> U[Community Benefits]
+    end
+    
+    A --> E
+    C --> N
+    R --> V[Game Results]
+    V --> W[FROTH Rewards]
+    W --> M
+```
+
+### 🤖 Flow Automation & Flow Forte Architecture
+
+```mermaid
+graph TB
+    subgraph "Bank Page Interface"
+        A[Automation Tab] --> B[Rule Creation]
+        A --> C[Statistics Dashboard]
+        A --> D[Strategy Management]
+    end
+    
+    subgraph "Automation Engine"
+        E[FlowAutomationService] --> F[Condition Monitoring]
+        F --> G{Rule Conditions Met?}
+        G -->|Yes| H[Execute Rule]
+        G -->|No| I[Continue Monitoring]
+        
+        H --> J[Rule Type Router]
+        J --> K[Auto Stake]
+        J --> L[Compound Rewards]
+        J --> M[Rebalance Portfolio]
+        J --> N[Flow Forte Strategy]
+    end
+    
+    subgraph "Flow Forte Strategies"
+        N --> O[Delta Neutral]
+        N --> P[Yield Optimization]
+        N --> Q[Risk Management]
+        
+        O --> R[Market Analysis]
+        O --> S[Position Balancing]
+        
+        P --> T[APY Comparison]
+        P --> U[Fund Allocation]
+        
+        Q --> V[Risk Metrics]
+        Q --> W[Position Adjustment]
+    end
+    
+    subgraph "Flow Blockchain"
+        X[Automation Manager] --> Y[Rule Storage]
+        X --> Z[Condition Scripts]
+        X --> AA[Execution Transactions]
+        
+        BB[Scheduled Transactions] --> CC[Recurring Jobs]
+        BB --> DD[Deferred Actions]
+    end
+    
+    B --> E
+    H --> X
+    R --> BB
+    T --> BB
+    V --> BB
+```
+
+### 🎲 Flow VRF Integration & Game Flow
+
+```mermaid
+sequenceDiagram
+    participant User as User
+    participant UI as Game Interface
+    participant FCL as Flow Client Library
+    participant Treasury as Flow Treasury
+    participant VRF as Flow VRF Service
+    participant Contract as Game Contract
+    participant Blockchain as Flow Blockchain
+    
+    User->>UI: Connect Flow Wallet
+    UI->>FCL: Authenticate User
+    FCL->>Blockchain: Verify Account
+    Blockchain-->>FCL: Account Details
+    FCL-->>UI: Wallet Connected
+    
+    User->>UI: Place Bet (10 FLOW)
+    UI->>FCL: Transfer to Treasury
+    FCL->>Treasury: Deposit FLOW
+    Treasury-->>FCL: Deposit Confirmed
+    
+    UI->>VRF: Request Randomness
+    Note over VRF: Generate Secure Random Number
+    VRF->>Contract: VRF Callback
+    Contract->>Contract: Calculate Game Result
+    
+    alt User Wins
+        Contract->>Treasury: Release Winnings
+        Treasury->>FCL: Transfer to User
+        FCL-->>UI: Balance Updated
+    else User Loses
+        Contract->>Treasury: Keep Bet Amount
+        Treasury-->>UI: Loss Confirmed
+    end
+    
+    Contract->>Blockchain: Emit Game Event
+    Blockchain-->>UI: Event Notification
+    UI-->>User: Display Result
+    
+    Note over User,Blockchain: All randomness verifiable on-chain
+    Note over Contract,Blockchain: Complete audit trail maintained
+```
+
+### 🔄 Multi-Token Gaming Ecosystem
+
+```mermaid
+graph LR
+    subgraph "Token Ecosystem"
+        A[FLOW Token] --> B[Native Gaming]
+        C[FROTH Token] --> D[Premium Features]
+        
+        B --> E[Basic Games]
+        B --> F[Standard Rewards]
+        
+        D --> G[Enhanced Games]
+        D --> H[Bonus Multipliers]
+        D --> I[Exclusive Access]
+    end
+    
+    subgraph "Cross-Chain Operations"
+        J[Flow Blockchain] --> K[Native FLOW Operations]
+        L[Flow EVM] --> M[FROTH Operations]
+        
+        K --> N[Flow Wallet]
+        M --> O[EVM Compatible Wallets]
+        
+        N --> P[Unified Interface]
+        O --> P
+    end
+    
+    subgraph "DeFi Integration"
+        Q[FROTH Staking] --> R[Yield Generation]
+        S[Liquidity Provision] --> T[Trading Fees]
+        U[Automation Rules] --> V[Portfolio Management]
+        
+        R --> W[Compound Returns]
+        T --> W
+        V --> W
+    end
+    
+    E --> Q
+    G --> S
+    H --> U
+    P --> X[Seamless User Experience]
+    W --> X
+```
+
+### 🏦 Banking & Treasury Management
+
+```mermaid
+graph TB
+    subgraph "User Banking Interface"
+        A[Balance Management] --> B[FLOW Balance]
+        A --> C[FROTH Balance]
+        A --> D[Deposit/Withdraw]
+    end
+    
+    subgraph "Treasury Operations"
+        E[Flow Treasury] --> F[FLOW Management]
+        G[FROTH Treasury] --> H[FROTH Management]
+        
+        F --> I[Game Funding]
+        F --> J[Reward Distribution]
+        
+        H --> K[Premium Features]
+        H --> L[Staking Rewards]
+    end
+    
+    subgraph "Automation Layer"
+        M[Auto Stake Rules] --> N[Balance Monitoring]
+        O[Compound Rules] --> P[Reward Optimization]
+        Q[Rebalance Rules] --> R[Portfolio Management]
+        
+        N --> S[Automatic Execution]
+        P --> S
+        R --> S
+    end
+    
+    subgraph "Security & Compliance"
+        T[Multi-Signature] --> U[Critical Operations]
+        V[Gas Optimization] --> W[Cost Efficiency]
+        X[MEV Protection] --> Y[Fair Execution]
+    end
+    
+    B --> F
+    C --> H
+    D --> E
+    D --> G
+    
+    I --> M
+    K --> O
+    L --> Q
+    
+    S --> T
+    S --> V
+    S --> X
+```
