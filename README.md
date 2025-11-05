@@ -51,7 +51,7 @@ The traditional online gambling industry is plagued by several issues, including
 - **Social Layer:** Live streaming, on-chain chat, and NFT-based player profiles.
 
 ## 🧩 Architecture
-<img width="1562" height="704" alt="Screenshot 2025-11-01 at 1 39 57 AM" src="https://github.com/user-attachments/assets/2d9f49e5-10cc-420e-82b1-c49c529b7a80" />
+<img width="1640" height="744" alt="Screenshot 2025-11-05 at 11 21 44 PM" src="https://github.com/user-attachments/assets/aaad80c7-afad-4b88-aa77-1c6d7ed5b461" />
 
 - **Frontend**: Next.js (App Router), React 18, Tailwind, MUI, Three.js
 - **Wallet/Chain**: Flow Client Library (FCL) + wagmi + RainbowKit
