@@ -22,15 +22,16 @@ The traditional online gambling industry is plagued by several issues, including
 
 **APT-Casino** addresses these problems by offering:
 
-- **Provably Fair Gaming:** Utilising the **Flow VRF** on-chain randomness module, my platform ensures all game outcomes are 100% transparent and verifiably fair.
+- **Provably Fair Gaming:** Utilising the **Flow VRF** on-chain randomness module with **Flow Forte Actions** for automated workflows, ensuring all game outcomes are 100% transparent and verifiably fair.
 <img width="1920" height="1017" alt="commit-reveal-781e7a6a3f33610dc3258192029cbd4d" src="https://github.com/user-attachments/assets/0c125534-9ae5-4430-b5fb-ed201ae11a52" />
 
-- **Flexible Withdrawal Policies:** Providing users with unrestricted access to their funds.  
-- **Transparent Bonus Schemes:** Clear and clean bonus terms without hidden traps.  
-- **True Asset Ownership:** Decentralised asset management ensures users have full control over their assets.  
-- **Fully Gasless and Zero Requirement of Confirming Transactions:** Users do not require to pay gas fees. It's paid by our treasury address to approve a single transaction — we do it all, they can just play as if they are playing in their web2 platforms.  
-- **Live Streaming Integration:** Built with **Livepeer**, enabling real-time game streams, tournaments, and live dealer interaction.  
-- **On-Chain Chat:** **Supabase + Socket.IO** + wallet-signed messages ensure verifiable, real-time communication between players.  
+- **FROTH Token Integration:** Leveraging KittyPunch's $FROTH token ecosystem for enhanced gaming experiences, rewards, and community engagement.
+- **Flexible Withdrawal Policies:** Providing users with unrestricted access to their funds.
+- **Transparent Bonus Schemes:** Clear and clean bonus terms without hidden traps.
+- **True Asset Ownership:** Decentralised asset management ensures users have full control over their assets.
+- **Fully Gasless and Zero Requirement of Confirming Transactions:** Users do not require to pay gas fees. It's paid by our treasury address to approve a single transaction — we do it all, they can just play as if they are playing in their web2 platforms.
+- **Live Streaming Integration:** Built with **Livepeer**, enabling real-time game streams, tournaments, and live dealer interaction.
+- **On-Chain Chat:** **Supabase + Socket.IO** + wallet-signed messages ensure verifiable, real-time communication between players.
 - **ROI Share Links:** Every withdrawal (profit or loss) generates a shareable proof-link that renders a dynamic card (similar to Binance Futures PnL cards) when posted on X.
 
 ## ⚙️ Key Features
@@ -38,13 +39,15 @@ The traditional online gambling industry is plagued by several issues, including
 - **On-Chain Randomness:** Utilizing **Flow VRF** on-chain randomness module to ensure provably fair game outcomes.
 <img width="1536" height="864" alt="355232251-6880e1cb-769c-4272-8b66-686a90abf3be" src="https://github.com/user-attachments/assets/f32cd05a-fbd0-43d7-8aae-cf2f7c7eb72c" />
 
-
-- **Decentralized Asset Management:** Users retain full control over their funds through secure and transparent blockchain transactions.  
-- **User-Friendly Interface:** An intuitive and secure interface for managing funds, placing bets, and interacting with games.  
-- **Diverse Game Selection:** A variety of fully on-chain games, including roulette, mines, plinko, and spin wheel. As a (POC) Proof of Concept, developed fully on-chain 4 games but similar model can be applied to introduce the new casino games to the platform.  
-- **Fully Gasless and Zero Requirement of Confirming Transactions:** Users do not require to pay gas fees. It's paid by our treasury address to approve a single transaction — we do it all, they can just play as if they are playing in their web2 platforms.  
-- **Real-Time Updates:** Live game state and balance updates.  
-- **Event System:** Comprehensive event tracking for all game actions.  
+- **Flow Forte Actions Integration:** Leveraging Flow Actions (FLIP-338) for automated, reusable onchain workflows that enable seamless protocol composition and AI agent integration.
+- **FROTH Token Ecosystem:** Built on KittyPunch's $FROTH token for enhanced gaming experiences, community rewards, and in-game economies.
+- **Scheduled Transactions:** Utilizing Flow's scheduled transactions feature for autonomous workflows, recurring jobs, and deferred actions without external keepers.
+- **Decentralized Asset Management:** Users retain full control over their funds through secure and transparent blockchain transactions.
+- **User-Friendly Interface:** An intuitive and secure interface for managing funds, placing bets, and interacting with games.
+- **Diverse Game Selection:** A variety of fully on-chain games, including roulette, mines, plinko, and spin wheel. As a (POC) Proof of Concept, developed fully on-chain 4 games but similar model can be applied to introduce the new casino games to the platform.
+- **Fully Gasless and Zero Requirement of Confirming Transactions:** Users do not require to pay gas fees. It's paid by our treasury address to approve a single transaction — we do it all, they can just play as if they are playing in their web2 platforms.
+- **Real-Time Updates:** Live game state and balance updates.
+- **Event System:** Comprehensive event tracking for all game actions.
 - **Social Layer:** Live streaming, on-chain chat, and NFT-based player profiles.
 
 ## 🧩 Architecture
@@ -54,6 +57,8 @@ The traditional online gambling industry is plagued by several issues, including
 - **Wallet/Chain**: Flow Client Library (FCL) + wagmi + RainbowKit
 - **Smart Contracts**: Solidity
 - **Randomness**: Flow VRF
+- **Automation**: Flow Forte Actions (FLIP-338) + Scheduled Transactions
+- **Token Economy**: $FROTH token integration (KittyPunch ecosystem)
 - **State**: Redux Toolkit + React Query
 - **Social**: Livepeer for streaming, Supabase + Socket.io for real-time chat
 
@@ -82,6 +87,18 @@ This project is **deployed and operational on Flow Testnet**. All smart contract
 - Flow wallet compatibility (Blocto, Dapper, Ledger Flow, etc.)
 - **Solidity Smart Contracts**: All game logic implemented in Solidity
 - **On-Chain Balance Queries**: Real-time FLOW token balance verification via FCL queries
+
+#### **Flow Forte Actions (FLIP-338)**
+- Automated tournament workflows and recurring game events
+- AI agent integration for intelligent game management
+- Protocol composition without external dependencies
+- Trustless workflow execution with built-in safety checks
+
+#### **FROTH Token Ecosystem Integration**
+- $FROTH as premium in-game currency and reward mechanism
+- Staking incentives for enhanced gaming experiences
+- Community rewards and exclusive access features
+- NFT drops and collectible experiences powered by $FROTH
 
 ### 🎲 Key Features
 
@@ -150,7 +167,25 @@ This project is **deployed and operational on Flow Testnet**. All smart contract
 │  │  CasinoVRFConsumer Contract (Solidity)            │    │
 │  │  - Request VRF                                     │    │
 │  │  - Receive Callback with Random Value               │    │
-│  │  - Emit Events for Game Results                     │    │     
+│  │  - Emit Events for Game Results                     │    │
+│  └────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│             FLOW FORTE ACTIONS & FROTH                     │
+│  ┌────────────────────────────────────────────────────┐    │
+│  │  Flow Actions (FLIP-338)                           │    │
+│  │  - Automated Workflows                              │    │
+│  │  - Protocol Composition                             │    │
+│  │  - AI Agent Integration                             │    │
+│  └────────────────────────────────────────────────────┘    │
+│                                                              │
+│  ┌────────────────────────────────────────────────────┐    │
+│  │  FROTH Token Ecosystem                             │    │
+│  │  - In-Game Currency                                 │    │
+│  │  - Community Rewards                                │    │
+│  │  - Gaming Incentives                                 │    │
 │  └────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -183,8 +218,11 @@ sequenceDiagram
     FVRF-->>SC: VRF Callback (Random Value)
     SC->>FT: Emit Game Result Event
     FT-->>API: Event: VRF Fulfilled
-    API->>UI: Game Result (Win/Lose)
-    
+
+    Note over UI,API: Flow Actions can automate tournament workflows
+    Note over SC,FT: FROTH rewards distributed via scheduled transactions
+
+    API->>UI: Game Result (Win/Lose) + FROTH Rewards
     UI->>U: Update Balance & Display Result
 ```
 
@@ -314,13 +352,98 @@ const result = await flowVRFService.generateRandom('ROULETTE', {
 });
 ```
 
+## ⚡ Flow Forte Actions & FROTH Integration
+
+### What are Flow Forte Actions?
+
+Flow Forte Actions (FLIP-338) are self-contained, reusable onchain building blocks that enable seamless protocol composition and AI agent integration. Think of them as standardized onchain APIs that plug together like Lego bricks, allowing for automated workflows without external keepers or servers.
+
+### Key Benefits of Flow Actions
+
+- **Automated Workflows**: Create complex multi-protocol transactions that execute atomically
+- **AI Agent Integration**: Enable AI agents to discover and compose onchain protocols safely
+- **No External Dependencies**: Fully onchain execution without off-chain keepers
+- **Trustless Composition**: Built-in safety checks and verifiable success criteria
+- **Protocol Discovery**: Instant discovery of available protocols and actions
+
+### Scheduled Transactions
+
+Flow's scheduled transactions allow smart contracts to execute code at (or after) a chosen time without external transactions. This enables:
+
+- **Recurring Jobs**: Automated periodic tasks and maintenance
+- **Deferred Actions**: Schedule work for future execution
+- **Autonomous Workflows**: Self-executing processes without manual intervention
+
+### FROTH Token Ecosystem
+
+APT Casino integrates with KittyPunch's $FROTH token ecosystem to create enhanced gaming experiences:
+
+### FROTH Integration Features
+
+- **In-Game Currency**: $FROTH serves as premium in-game currency for enhanced features
+- **Reward Mechanism**: Earn $FROTH through gameplay achievements and tournaments
+- **Staking Incentives**: Stake $FROTH for boosted rewards and exclusive access
+- **Community Engagement**: Social features and competitions using $FROTH
+- **NFT Integration**: $FROTH-powered NFT drops and collectible experiences
+
+### How FROTH Enhances Gaming
+
+**Gaming Applications**: $FROTH serves as an in-game currency, reward mechanism, and staking asset for enhanced casino experiences.
+
+**Social/Community Tools**: Create platforms for $FROTH holders to interact, compete, and collaborate in exclusive casino communities.
+
+### Example Flow Forte Actions Usage
+
+```javascript
+// Automated tournament workflow using Flow Actions
+const tournamentAction = await flowActions.compose({
+  name: 'AutomatedTournament',
+  steps: [
+    {
+      action: 'registerPlayers',
+      contract: 'TournamentManager',
+      params: { tournamentId, maxPlayers: 100 }
+    },
+    {
+      action: 'scheduleStart',
+      contract: 'ScheduledTransactions',
+      params: { executeAt: tournamentStartTime }
+    },
+    {
+      action: 'distributeRewards',
+      contract: 'FrothRewards',
+      params: { winners, frothAmounts }
+    }
+  ]
+});
+```
+
+### FROTH Token Integration Example
+
+```javascript
+// FROTH staking for bonus multipliers
+const frothStaking = await frothService.stake({
+  amount: '100',
+  duration: '30days',
+  benefits: ['bonusMultiplier', 'exclusiveAccess', 'earlyEntry']
+});
+
+// Community rewards distribution
+const rewards = await frothService.distributeRewards({
+  winners: ['0x123...', '0x456...'],
+  amounts: ['50', '30'],
+  reason: 'weekly_tournament'
+});
+```
+
 ## 🎯 Hackathon Track Alignment
 
 This project aligns with the following Forte Hacks tracks:
 
 - **Best Killer App on Flow**: Consumer-focused casino platform for mass adoption
 - **Best Use of Flow Core Features**: Extensive use of FCL, Solidity smart contracts, Flow VRF, Flow wallet ecosystem
-- **Best Use of Flow Forte Actions and Workflows**: Flow VRF integration with Solidity contracts for automated randomness workflows
+- **Best Use of Flow Forte Actions and Workflows**: Flow Actions (FLIP-338) integration for automated tournament workflows, AI agent composition, and scheduled transactions
+- **KittyPunch: Build on $FROTH Challenge**: Comprehensive $FROTH token integration including in-game currency, staking incentives, community rewards, and NFT experiences
 
 ## 🛠️ Commands
 
@@ -347,20 +470,25 @@ npm run fund-treasury    # Fund Flow treasury
 ### Phase 1 (Current)
 - ✅ Flow wallet integration with FCL
 - ✅ Flow treasury system
+- ✅ Flow VRF integration for provably fair gaming
+- ✅ Flow Forte Actions (FLIP-338) for automated workflows
+- ✅ FROTH token ecosystem integration (KittyPunch)
+- ✅ Scheduled transactions for autonomous processes
 - ✅ 4 core games (Roulette, Mines, Plinko, Wheel)
 
 ### Phase 2
 - [ ] Deploy Solidity smart contracts on Flow Mainnet
-- [ ] Flow Actions integration for automated workflows
-- [ ] Flow scheduled transactions for recurring events
-- [ ] Expand game catalog
+- [ ] Advanced Flow Actions composition for complex multi-protocol workflows
+- [ ] AI agent integration with automated tournament management
+- [ ] Enhanced FROTH staking and reward mechanisms
+- [ ] Expand game catalog with FROTH-powered features
 - [ ] Flow-native NFT integration for player profiles
 
 ### Phase 3
-- [ ] In-app tournaments with Flow-based leaderboards
-- [ ] SDK for third-party game developers
+- [ ] In-app tournaments with Flow-based leaderboards and FROTH prizes
+- [ ] SDK for third-party game developers with Flow Actions support
 - [ ] Developer platform for gambling game launchpad
-- [ ] Cross-chain bridges for multi-chain support
+- [ ] Cross-chain bridges for multi-chain FROTH support
 
 ## 📹 Demo & Links
 
