@@ -463,7 +463,7 @@ npm run fund-treasury    # Fund Flow treasury
 <img width="1050" height="585" alt="Screenshot 2026-01-31 at 12 28 26 AM" src="https://github.com/user-attachments/assets/b61633b9-979b-4965-ae32-e610d3d82642" />
 
 ## Roadmap
-<img width="1710" height="966" alt="Screenshot 2025-11-01 at 1 41 40 AM" src="https://github.com/user-attachments/assets/939f558e-b5e3-4d88-932f-115438290f63" />
+<img width="1046" height="581" alt="Screenshot 2026-01-31 at 12 30 15 AM" src="https://github.com/user-attachments/assets/beb209f2-2e09-4b79-856d-bcd061d2331c" />
 
 ## 🗺️ Roadmap
 
