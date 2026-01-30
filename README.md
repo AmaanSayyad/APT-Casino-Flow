@@ -460,7 +460,7 @@ npm run fund-treasury    # Fund Flow treasury
 ```
 
 ## Business Model
-<img width="1640" height="966" alt="Screenshot 2025-11-01 at 1 41 30 AM" src="https://github.com/user-attachments/assets/7929ae1a-54ed-4d6e-9579-0119b8dad282" />
+<img width="1050" height="585" alt="Screenshot 2026-01-31 at 12 28 26 AM" src="https://github.com/user-attachments/assets/b61633b9-979b-4965-ae32-e610d3d82642" />
 
 ## Roadmap
 <img width="1710" height="966" alt="Screenshot 2025-11-01 at 1 41 40 AM" src="https://github.com/user-attachments/assets/939f558e-b5e3-4d88-932f-115438290f63" />
@@ -494,7 +494,7 @@ npm run fund-treasury    # Fund Flow treasury
 
 - **Live URL**: https://apt-casino-flow.vercel.app
 - **Pitch Deck**: https://www.figma.com/deck/w6uEPX0mlzm3X0EHdZ3HsB/APT-Casino-Flow?node-id=1-1812&p=f&t=Mobb2fLKVbG84e5v-1&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1
-- **X Link**: https://x.com/AmaanSayyad15/status/1986159537691500802
+
 ## 🔧 Technical Architecture Diagrams
 
 ### 🪙 FROTH Token Integration Flow
