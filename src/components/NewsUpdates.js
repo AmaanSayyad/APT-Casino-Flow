@@ -9,7 +9,7 @@ const NewsUpdates = () => {
       id: 1,
       title: 'New Token Bridge Partnership with Flow',
       excerpt: 'APT Casino partners with Flow Network to provide seamless cross-chain token transfers with lower fees.',
-      date: '2025-05-08',
+      date: '2026-01-30',
       category: 'Partnership',
       image: '/images/news/partnership.png',
       url: '/news/token-bridge-partnership'
@@ -18,7 +18,7 @@ const NewsUpdates = () => {
       id: 2,
       title: 'FLOW Governance Proposal: Community Jackpots',
       excerpt: 'Vote on the new proposal to allocate 5% of platform fees to community-controlled jackpot pools.',
-      date: '2025-05-04',
+      date: '2026-01-30',
       category: 'Governance',
       image: '/images/news/governance.png',
       url: '/news/community-jackpots'
@@ -27,7 +27,7 @@ const NewsUpdates = () => {
       id: 3,
       title: 'New Games Added: Crash and Plinko',
       excerpt: 'Two new provably fair games have been added to our collection with exclusive launch bonuses.',
-      date: '2025-05-03',
+      date: '2026-01-30',
       category: 'Platform',
       image: '/images/news/new-games.png',
       url: '/news/new-games-crash-plinko'
@@ -36,7 +36,7 @@ const NewsUpdates = () => {
       id: 4,
       title: 'Security Audit Completed by Certik',
       excerpt: 'APT Casino\'s smart contracts have passed rigorous security auditing by Certik with high scores.',
-      date: '2025-05-02',
+      date: '2026-01-30',
       category: 'Security',
       image: '/images/news/security.png',
       url: '/news/certik-audit'

@@ -16,7 +16,7 @@ const formatFLOWAmount = (amount) => {
 const sampleBets = [
   { 
     id: 1, 
-    time: '2025-09-27T14:35:22Z', 
+    time: '2026-01-30T14:35:22Z', 
     betType: 'Multiple Bets (3)', 
     amount: 10, 
     result: 23, 
@@ -35,7 +35,7 @@ const sampleBets = [
   },
   { 
     id: 2, 
-    time: '2025-09-27T14:32:19Z', 
+    time: '2026-01-30T14:32:19Z', 
     betType: 'Multiple Bets (2)', 
     amount: 15, 
     result: 16, 
@@ -54,7 +54,7 @@ const sampleBets = [
   },
   { 
     id: 3, 
-    time: '2025-09-27T14:30:05Z', 
+    time: '2026-01-30T14:30:05Z', 
     betType: 'Multiple Bets (2)', 
     amount: 20, 
     result: 15, 
@@ -73,7 +73,7 @@ const sampleBets = [
   },
   { 
     id: 4, 
-    time: '2025-09-27T14:25:45Z', 
+    time: '2026-01-30T14:25:45Z', 
     betType: 'Multiple Bets (1)', 
     amount: 5, 
     result: 17, 
@@ -92,7 +92,7 @@ const sampleBets = [
   },
   { 
     id: 5, 
-    time: '2025-09-27T14:22:10Z', 
+    time: '2026-01-30T14:22:10Z', 
     betType: 'Multiple Bets (2)', 
     amount: 10, 
     result: 22, 
@@ -105,7 +105,7 @@ const sampleBets = [
   },
   { 
     id: 6, 
-    time: '2025-09-27T14:18:33Z', 
+    time: '2026-01-30T14:18:33Z', 
     betType: 'Multiple Bets (3)', 
     amount: 15, 
     result: 22, 
@@ -118,7 +118,7 @@ const sampleBets = [
   },
   { 
     id: 7, 
-    time: '2025-09-27T14:15:21Z', 
+    time: '2026-01-30T14:15:21Z', 
     betType: 'Multiple Bets (2)', 
     amount: 25, 
     result: 5, 
@@ -131,7 +131,7 @@ const sampleBets = [
   },
   { 
     id: 8, 
-    time: '2025-09-27T14:12:08Z', 
+    time: '2026-01-30T14:12:08Z', 
     betType: 'Multiple Bets (2)', 
     amount: 20, 
     result: 12, 
@@ -144,7 +144,7 @@ const sampleBets = [
   },
   { 
     id: 9, 
-    time: '2025-09-27T14:08:55Z', 
+    time: '2026-01-30T14:08:55Z', 
     betType: 'Multiple Bets (2)', 
     amount: 10, 
     result: 8, 
@@ -157,7 +157,7 @@ const sampleBets = [
   },
   { 
     id: 10, 
-    time: '2025-09-27T14:05:42Z', 
+      time: '2026-01-30T14:05:42Z', 
     betType: 'Multiple Bets (1)', 
     amount: 15, 
     result: 33, 
