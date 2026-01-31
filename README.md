@@ -436,15 +436,6 @@ const rewards = await frothService.distributeRewards({
 });
 ```
 
-## 🎯 Hackathon Track Alignment
-
-This project aligns with the following Forte Hacks tracks:
-
-- **Best Killer App on Flow**: Consumer-focused casino platform for mass adoption
-- **Best Use of Flow Core Features**: Extensive use of FCL, Solidity smart contracts, Flow VRF, Flow wallet ecosystem
-- **Best Use of Flow Forte Actions and Workflows**: Flow Actions (FLIP-338) integration for automated tournament workflows, AI agent composition, and scheduled transactions
-- **KittyPunch: Build on $FROTH Challenge**: Comprehensive $FROTH token integration including in-game currency, staking incentives, community rewards, and NFT experiences
-
 ## 🛠️ Commands
 
 ```bash
