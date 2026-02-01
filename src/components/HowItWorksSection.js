@@ -24,7 +24,7 @@ const HowItWorksSection = () => {
     {
       id: 1,
       title: 'Connect Your Wallet',
-      description: 'Link any wallet in seconds to unlock the full APT Casino experience. We support Keyless login Walets, Flow Wallet, MetaMask and all major Web3 wallets.',
+      description: 'Link any wallet in seconds to unlock the full APT Casino experience. We support Keyless login, Flow Wallet, MetaMask and all major Web3 wallets.',
       emoji: '👛'
     },
     {

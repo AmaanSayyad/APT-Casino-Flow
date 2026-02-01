@@ -22,7 +22,7 @@ The traditional online gambling industry is plagued by several issues, including
 
 **APT-Casino** addresses these problems by offering:
 
-- **Provably Fair Gaming:** Utilising the **Flow VRF** on-chain randomness module with **Flow Forte Actions** for automated workflows, ensuring all game outcomes are 100% transparent and verifiably fair.
+- **Provably Fair Gaming:** Live games use **Cadence** (CasinoGames.cdc) with **Cadence's built-in `generateSecureRandom`** for on-chain randomness; **Pyth Entropy** on Flow EVM is available via Cadence and Solidity for alternative/verifiable randomness. **Flow Forte Actions** support automated workflows.
 <img width="1920" height="1017" alt="commit-reveal-781e7a6a3f33610dc3258192029cbd4d" src="https://github.com/user-attachments/assets/0c125534-9ae5-4430-b5fb-ed201ae11a52" />
 
 - **FROTH Token Integration:** Leveraging KittyPunch's $FROTH token ecosystem for gaming experiences, rewards, and community engagement.
@@ -36,7 +36,7 @@ The traditional online gambling industry is plagued by several issues, including
 
 ## ⚙️ Key Features
 
-- **On-Chain Randomness:** Utilizing **Flow VRF** on-chain randomness module to ensure provably fair game outcomes.
+- **On-Chain Randomness:** Cadence games use **Cadence `generateSecureRandom`** (block + timestamp + salt). **Pyth Entropy** on Flow EVM (Cadence and Solidity) is available for verifiable randomness.
 <img width="1536" height="864" alt="355232251-6880e1cb-769c-4272-8b66-686a90abf3be" src="https://github.com/user-attachments/assets/f32cd05a-fbd0-43d7-8aae-cf2f7c7eb72c" />
 
 - **Flow Forte Actions Integration:** Leveraging Flow Actions (FLIP-338) for automated, reusable onchain workflows that enable protocol composition and AI agent integration.
@@ -55,14 +55,16 @@ The traditional online gambling industry is plagued by several issues, including
 
 - **Frontend**: Next.js (App Router), React 18, Tailwind, MUI, Three.js
 - **Wallet/Chain**: Flow Client Library (FCL) + wagmi + RainbowKit
-- **Smart Contracts**: Solidity
-- **Randomness**: Flow VRF
+- **Smart Contracts**: **Cadence** (live game flow: CasinoGames.cdc on Flow Testnet) and **Cadence and Solidity** (Pyth Entropy consumer on Flow EVM; optional path)
+- **Randomness**: **Cadence** (live games use Cadence `generateSecureRandom` in CasinoGames.cdc; block + timestamp + salt). **Pyth Entropy** on Flow EVM is available via Cadence and Solidity contract and `/api/generate-entropy` for alternative/verifiable randomness.
 - **Automation**: Flow Forte Actions (FLIP-338) + Scheduled Transactions
 - **Token Economy**: $FROTH token integration (KittyPunch ecosystem)
 - **State**: Redux Toolkit + React Query
 - **Social**: Livepeer for streaming, Supabase + Socket.io for real-time chat
 
-**APT Casino** is a fully decentralized casino platform that leverages Flow blockchain's unique architecture to deliver a transparent, secure, and user-friendly gambling experience. Built with Flow's native features including Flow Client Library (FCL), Solidity smart contracts, and Flow Testnet infrastructure, APT Casino addresses critical issues in traditional online gambling platforms through blockchain transparency and provably fair game mechanics.
+**What we use today:** The **live game flow** (Roulette, Mines, Plinko, Wheel) uses **Cadence** only: FCL, treasury-sponsored transactions, and the **Cadence** contract `CasinoGames.cdc` on Flow Testnet. Randomness for those games comes from **Cadence's built-in `generateSecureRandom`** (block height + timestamp + salt), not Flow VRF. We also have **Cadence and Solidity + Pyth Entropy** on Flow EVM (deployed consumer contract, `/api/generate-entropy`); that path is available for future use or verification.
+
+**APT Casino** is a fully decentralized casino platform that leverages Flow blockchain's unique architecture to deliver a transparent, secure, and user-friendly gambling experience. Built with Flow's native features including Flow Client Library (FCL), Cadence and Solidity smart contracts, and Flow Testnet infrastructure, APT Casino addresses critical issues in traditional online gambling platforms through blockchain transparency and provably fair game mechanics.
 
 ## 🔗 Built on Flow Testnet
 
@@ -85,7 +87,7 @@ This project is **deployed and operational on Flow Testnet**. All smart contract
 - Direct wallet connection using Flow's native wallet discovery
 - Gasless transactions via treasury-sponsored flows
 - Flow wallet compatibility (Blocto, Dapper, Ledger Flow, etc.)
-- **Solidity Smart Contracts**: All game logic implemented in Solidity
+- **Cadence and Solidity Smart Contracts**: All game logic implemented in Cadence and Solidity
 - **On-Chain Balance Queries**: Real-time FLOW token balance verification via FCL queries
 
 #### **Flow Forte Actions (FLIP-338)**
@@ -103,7 +105,7 @@ This project is **deployed and operational on Flow Testnet**. All smart contract
 ### 🎲 Key Features
 
 #### Provably Fair Gaming
-- **FLOW VRF Integration**: On-chain cryptographic randomness via FLOW VRF
+- **Cadence randomness**: Live games use Cadence `generateSecureRandom` in CasinoGames.cdc; **Pyth Entropy** on Flow EVM (Cadence and Solidity) available for alternative path
 - **Transparent Outcomes**: All randomness verifiable on-chain with cryptographic proofs
 - **Audit Trail**: Every game result permanently stored on-chain
 
@@ -156,15 +158,15 @@ This project is **deployed and operational on Flow Testnet**. All smart contract
 │  │  Flow Testnet                                      │    │
 │  │  - FLOW Token Contracts                            │    │
 │  │  - Treasury Wallet (0x2083a55fb16f8f60)           │    │
-│  │  - Solidity Smart Contracts                        │    │
+│  │  - Cadence and Solidity Smart Contracts                        │    │
 │  └────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
-│             FLOW VRF                                        │
+│             Flow VRF and Cadence's built-in randomness                                        │
 │  ┌────────────────────────────────────────────────────┐    │
-│  │  CasinoVRFConsumer Contract (Solidity)            │    │
+│  │  CasinoVRFConsumer Contract (Cadence and Solidity)            │    │
 │  │  - Request VRF                                     │    │
 │  │  - Receive Callback with Random Value               │    │
 │  │  - Emit Events for Game Results                     │    │
@@ -200,7 +202,7 @@ sequenceDiagram
     participant FT as Flow Testnet
     participant API as API Route
     participant FVRF as Flow VRF
-    participant SC as Solidity Contract
+    participant SC as Cadence and Solidity Contract
     
     U->>FCL: Connect Flow Wallet
     FCL->>FT: Authenticate & Get Balance
@@ -213,7 +215,7 @@ sequenceDiagram
     FT-->>FCL: Transaction Confirmed
     
     UI->>API: Request Randomness for Game
-    API->>SC: Call Solidity Contract (requestVRF)
+    API->>SC: Call Cadence and Solidity Contract (requestVRF)
     SC->>FVRF: Request Random Value
     FVRF-->>SC: VRF Callback (Random Value)
     SC->>FT: Emit Game Result Event
@@ -297,12 +299,12 @@ fcl.config({
 const user = await fcl.authenticate();
 ```
 
-### Solidity Smart Contracts
+### Cadence and Solidity Smart Contracts
 
-All game logic and VRF integration are implemented using Solidity smart contracts:
+All game logic and VRF integration are implemented using Cadence and Solidity smart contracts:
 
 - **CasinoEntropyConsumer.sol**: Main contract handling VRF requests and game outcomes
-- **Treasury Contract**: Manages deposits and withdrawals using Solidity
+- **Treasury Contract**: Manages deposits and withdrawals using Cadence and Solidity
 - Contracts interact with Flow blockchain through FCL and Flow's transaction system
 
 ## 🎲 Flow VRF Powered Fairness
@@ -335,7 +337,7 @@ When you start a game, a randomness request is sent to Flow VRF on Flow Testnet.
 Flow VRF generates a cryptographically secure random number using Flow's native randomness oracle.
 
 **Step 3: Callback Execution**  
-The random value is delivered via callback to your Solidity contract, triggering game logic execution.
+The random value is delivered via callback to your Cadence and Solidity contract, triggering game logic execution.
 
 **Step 4: Result Storage**  
 Game outcome is calculated, events are emitted, and results are permanently stored on-chain.
@@ -446,7 +448,7 @@ npm start                # Start production server
 npm run lint             # Run linter
 
 # Contract Deployment
-npm run deploy:flow      # Deploy Solidity contracts to Flow (if configured)
+npm run deploy:flow      # Deploy Cadence and Solidity contracts to Flow (if configured)
 npm run fund-treasury    # Fund Flow treasury
 ```
 
@@ -461,14 +463,14 @@ npm run fund-treasury    # Fund Flow treasury
 ### Phase 1 (Current)
 - ✅ Flow wallet integration with FCL
 - ✅ Flow treasury system
-- ✅ Flow VRF integration for provably fair gaming
+- ✅ Cadence randomness (generateSecureRandom) for live games; Flow VRF and Pyth Entropy on Flow EVM available
 - ✅ Flow Forte Actions (FLIP-338) for automated workflows
 - ✅ FROTH token ecosystem integration (KittyPunch)
 - ✅ Scheduled transactions for autonomous processes
 - ✅ 4 core games (Roulette, Mines, Plinko, Wheel)
 
 ### Phase 2
-- [ ] Deploy Solidity smart contracts on Flow Mainnet
+- [ ] Deploy Cadence and Solidity smart contracts on Flow Mainnet
 - [ ] Flow Actions composition for complex multi-protocol workflows
 - [ ] AI agent integration with automated tournament management
 - [ ] Improved FROTH staking and reward mechanisms
