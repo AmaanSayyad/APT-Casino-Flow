@@ -483,11 +483,6 @@ npm run fund-treasury    # Fund Flow treasury
 - [ ] Developer platform for gambling game launchpad
 - [ ] Cross-chain bridges for multi-chain FROTH support
 
-## 📹 Demo & Links
-
-- **Live URL**: https://apt-casino-flow.vercel.app
-- **Pitch Deck**: https://www.figma.com/deck/w6uEPX0mlzm3X0EHdZ3HsB/APT-Casino-Flow?node-id=1-1812&p=f&t=Mobb2fLKVbG84e5v-1&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1
-
 ## 🔧 Technical Architecture Diagrams
 
 ### 🪙 FROTH Token Integration Flow
@@ -726,3 +721,10 @@ graph TB
     S --> V
     S --> X
 ```
+
+## 📹 Demo & Links
+
+- **Live URL**: https://apt-casino-flow.vercel.app
+- **Pitch Deck**: https://www.figma.com/deck/w6uEPX0mlzm3X0EHdZ3HsB/APT-Casino-Flow?node-id=1-1812&p=f&t=Mobb2fLKVbG84e5v-1&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1
+- **Pitch Video**: https://youtu.be/QOfCu-ugTSg
+- **Demo Video**: https://youtu.be/qxF7gGGz0Ww
